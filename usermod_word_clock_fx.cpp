@@ -657,15 +657,18 @@ class WordClockFxUsermod : public Usermod {
         JsonArray aL = user.createNestedArray(F("Word Clock location"));
         aL.add(loc);
 
-        // Clickable link to the exact Open-Meteo query used (handy for debugging the data).
+        // Exact Open-Meteo query used (handy for debugging). Render as a short clickable link
+        // ("open-meteo.com") so the long URL doesn't overflow the Info panel; the full URL is the
+        // href. The settings status panel parses the href back out for its "view source" link.
         const float la = useLat(), lo = useLon();
         if (la != 0.0f || lo != 0.0f) {
-          char url[176];
-          snprintf(url, sizeof(url),
-            "https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
-            "&current=temperature_2m,relative_humidity_2m,weather_code,wind_gusts_10m",
+          char link[256];
+          snprintf(link, sizeof(link),
+            "<a href=\"https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f"
+            "&current=temperature_2m,relative_humidity_2m,weather_code,wind_gusts_10m\""
+            " target=\"_blank\">open-meteo.com</a>",
             la, lo);
-          user.createNestedArray(F("Word Clock source")).add(url);
+          user.createNestedArray(F("Word Clock source")).add(link);
         }
 
         JsonArray aU = user.createNestedArray(F("Word Clock updated"));
@@ -876,7 +879,8 @@ class WordClockFxUsermod : public Usermod {
                 "e.innerHTML='&#127777;&#65039; '+g('Word Clock temperature')+' &nbsp; &#128167; '+g('Word Clock humidity')+"
                 "' &nbsp; '+g('Word Clock condition')+'<br>&#128205; '+g('Word Clock location')+"
                 "' &nbsp; &#128260; '+g('Word Clock updated');"
-                "var sp=document.getElementById('wcfxsrc');if(sp)sp.innerHTML=(src!=='-')?(' &middot; <a href=\"'+src+'\" target=\"_blank\">view source</a>'):'';"
+                "var sp=document.getElementById('wcfxsrc');if(sp){var hm=(src!=='-')?src.match(/href=\"([^\"]+)\"/):null;"
+                "sp.innerHTML=hm?(' &middot; <a href=\"'+hm[1]+'\" target=\"_blank\">view source</a>'):'';}"
                 "}).catch(function(){"
                 "var e=document.getElementById('wcfxstat');if(e)e.innerHTML='(status unavailable)';});};"));
       oappend(F("wcfxupd=function(){var e=document.getElementById('wcfxstat');if(e)e.innerHTML='Updating...';"
