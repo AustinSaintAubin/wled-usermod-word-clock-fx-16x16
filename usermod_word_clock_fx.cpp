@@ -10,7 +10,7 @@
 /*
  * Word Clock FX - 16x16 RGBW matrix word clock as a WLED Effect (English, exact-minute phrasing).
  *
- * Version : 1.1.1
+ * Version : 1.2.0
  * Updated : 2026-06-30
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
@@ -32,7 +32,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.1.1"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.2.0"   // usermod_word_clock_fx
 
 // A word is a horizontal run of letters: top-left cell (x,y) and length.
 struct WcfxWord { uint8_t x, y, len; };
