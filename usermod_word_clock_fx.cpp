@@ -863,8 +863,13 @@ class WordClockFxUsermod : public Usermod {
 
       // ---- live status panel + "Update now" -----------------------------------
       oappend(F("addInfo('WordClockFx:fetchWeather', 1, \"<div id='wcfxstat'>loading current weather...</div>"
-                "<div class='wcfxi' style='margin:3px 14px 6px'>Weather data by "
+                "<div class='wcfxi' style='margin:2px 14px 3px'>Weather data by "
                 "<a href='https://open-meteo.com' target='_blank'>open-meteo.com</a><span id='wcfxsrc'></span></div>\");"));
+      // The card+attribution are injected between the 'Fetch weather' checkbox and its trailing
+      // <br> (WLED renders each field as 'label <input> ... <br>'). Drop that now-empty <br> so the
+      // 'Every (min)' row sits snug under the attribution instead of after a blank line.
+      oappend(F("(function(){var c=document.getElementById('wcfxstat');if(!c)return;"
+                "for(var n=c.nextSibling;n;n=n.nextSibling){if(n.nodeName==='BR'){n.parentNode.removeChild(n);break;}}})();"));
       oappend(F("wcfxrefresh=function(){fetch('/json/info').then(function(r){return r.json();}).then(function(j){"
                 "var u=(j&&j.u)||{};function g(k){var a=u[k];return a?(Array.isArray(a)?a.join(''):a):'-';}"
                 "var e=document.getElementById('wcfxstat');if(!e)return;var src=g('Word Clock source');"
