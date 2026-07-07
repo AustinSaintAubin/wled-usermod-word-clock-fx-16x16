@@ -9,9 +9,10 @@ saved per-preset like any other effect.
 It shows the time in English with **exact-minute** phrasing plus the period of day, e.g.
 `IT IS TWENTY ONE MINUTES PAST SEVEN IN THE EVENING`.
 
-The word **layout is selectable** in the usermod settings: the original **16×16 exact-minute**
-face (default), an **11×10 "WordClock 2022"** face with 5-minute phrasing, or a **custom
-layout** loaded from a `/wordclock.json` file — see [Layouts](#layouts).
+Word **layouts are JSON files** (`wcfx-*.json`) on the WLED filesystem, selectable in the
+usermod settings. Two stock faces ship built in — the original **16×16 exact-minute**
+(default) and the **11×10 "WordClock 2022"** with 5-minute phrasing — and you can add your
+own by uploading a file — see [Layouts](#layouts).
 
 > **Note:** this usermod (code, settings UI, and docs) was developed with **AI assistance**
 > and validated by building against WLED. Review before use and verify on your own hardware.
@@ -129,7 +130,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.3.0` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.4.0` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
@@ -164,33 +165,29 @@ An example preset set [`examples/wled_presets.example.json`](examples/wled_prese
 
 ### Layouts
 
-The **Layout** dropdown in the usermod settings selects the word face:
+Every word face is a **`wcfx-*.json` file in the root of the WLED filesystem**. The **Layout**
+dropdown in the usermod settings lists all of them (sorted by each file's `name` field), and a
+**layout docs** link next to the dropdown opens the file's `link` URL. The two stock faces are
+**seeded at boot if missing** — edit them freely, or delete one to restore the stock version
+on the next reboot:
 
-| Layout | Grammar | Notes |
-| ------ | ------- | ----- |
-| **16×16 exact-minute** (default) | exact minute | The original MK2 face documented above; period-of-day + temperature words. |
-| **11×10 WordClock 2022** | 5-minute steps | The popular [WordClock 2022](https://www.printables.com/model/311949) face; AM/PM tiles (shown when `showPeriodOfDay` is on). |
-| **Custom (`/wordclock.json`)** | either | Your own face, loaded from a file on the WLED filesystem. |
+| File | Grammar | Notes |
+| ---- | ------- | ----- |
+| `wcfx-16x16.json` (default) | exact minute | The original MK2 face documented above; period-of-day + temperature words. |
+| `wcfx-11x10.json` | 5-minute steps | The popular [WordClock 2022](https://www.printables.com/model/311949-wordclock-2022) face; AM/PM tiles (shown when `showPeriodOfDay` is on). |
 
-Positioning: the layout draws from the **segment's top-left**. If the word face doesn't fill
-the whole matrix (e.g. an 11×10 face padded into a 12×12 matrix), frame it with the segment's
-**2D start/stop bounds** — no usermod setting needed. The active layout (and, for custom, the
-parse result) is shown on the WLED **Info** page.
-
-**5-minute grammar** floors to the last 5-minute step (10:04 still reads `TEN O'CLOCK`),
-`PAST`/`TO` around the half hour, `A QUARTER` at :15/:45, `TWENTY FIVE` as TWENTY+FIVE.
-Enable **Minute dots** (Corner buttons section) to show the floored-off 1–4 minutes on the
-corner LEDs.
-
-**Custom layout** — upload a `wordclock.json` to the WLED filesystem via the `/edit` page
-(like `ledmap.json`), select **Custom** in the dropdown, and save. A ready-made 11×10 example
-is included at [`examples/wordclock_11x10.json`](examples/wordclock_11x10.json). Format:
+**Add your own face**: upload any `wcfx-<something>.json` via the `/edit` page (like
+`ledmap.json`), then pick it in the dropdown. The stock files double as templates — copies
+also live in [`examples/`](examples/). Format:
 
 ```json
-{ "w": 11, "h": 10, "grammar": "five",
+{ "name": "My 11x10", "link": "https://example.com/my-clock-docs",
+  "w": 11, "h": 10, "grammar": "five",
   "words": [ ["it",0,0,2], ["is",3,0,2], ["h1",0,5,3], ["oclock",5,9,6] ] }
 ```
 
+- `name` — dropdown label (falls back to the filename); `link` — optional docs URL shown as
+  a clickable link in the settings and on the Info page.
 - `w`/`h` — grid size (1–32 each); `grammar` — `"five"` or `"exact"`.
 - Each word is `[role, x, y, len]`: 0-indexed top-left cell + run length (horizontal).
 - Roles: `it is a quarter half past to until oclock minutes am pm in the at morning
@@ -198,9 +195,21 @@ is included at [`examples/wordclock_11x10.json`](examples/wordclock_11x10.json).
   dedicated TWENTYFIVE tile), hours `h1`–`h12`. `until` is an alias of `to`. Repeating a role
   makes a multi-segment word (all segments light). Roles the grammar wants but the layout
   lacks are simply skipped.
-- After editing the file, either save the usermod settings again, reboot, or send
-  `{"WordClockFx":{"reloadLayout":true}}` to the JSON API. Errors fall back to the 16×16
-  layout and are reported on the **Info** page.
+- After editing a file, either save the usermod settings again, reboot, or send
+  `{"WordClockFx":{"reloadLayout":true}}` to the JSON API. Errors fall back to the built-in
+  16×16 and are reported on the **Info** page.
+
+Positioning: the layout draws from the **segment's top-left**. If the word face doesn't fill
+the whole matrix (e.g. an 11×10 face padded into a 12×12 matrix), frame it with the segment's
+**2D start/stop bounds** — no usermod setting needed.
+
+**5-minute grammar** floors to the last 5-minute step (10:04 still reads `TEN O'CLOCK`),
+`PAST`/`TO` around the half hour, `A QUARTER` at :15/:45, `TWENTY FIVE` as TWENTY+FIVE.
+Enable **Minute dots** (Corner buttons section) to show the floored-off 1–4 minutes on the
+corner LEDs.
+
+> Upgrading from v1.3.0: the saved numeric layout setting migrates automatically, and an
+> existing `/wordclock.json` custom face is renamed to `/wcfx-custom.json` at boot.
 
 ### Grammar (exact-minute layouts)
 - On the hour: `IT IS <hour> O'CLOCK`

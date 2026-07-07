@@ -10,7 +10,7 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.3.0
+ * Version : 1.4.0
  * Updated : 2026-07-07
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
@@ -22,13 +22,14 @@
  *
  * The effect is 2D: configure the matrix in WLED's LED preferences (set the
  * serpentine/rotation there to match the physical wiring). This code works purely
- * in logical X/Y and never touches raw LED indices. The word layout is selectable
- * in the usermod settings:
- *   - 16x16 exact-minute (default), e.g. "IT IS TWENTY ONE MINUTES PAST SEVEN IN THE EVENING"
- *   - 11x10 "WordClock 2022" (printables.com/model/311949), 5-minute phrasing + AM/PM
- *   - Custom: /wordclock.json uploaded to the WLED filesystem (see readme)
- * The layout draws from the segment's top-left; position it with the segment's 2D
- * bounds. Corner LEDs can optionally count the minutes a 5-minute layout can't show.
+ * in logical X/Y and never touches raw LED indices. Word layouts are /wcfx-*.json
+ * files on the WLED filesystem (add your own via the /edit page); the two stock faces
+ * are seeded at boot if missing (delete one to restore stock):
+ *   - wcfx-16x16.json exact-minute (default), e.g. "IT IS TWENTY ONE MINUTES PAST SEVEN..."
+ *   - wcfx-11x10.json "WordClock 2022" (printables.com/model/311949), 5-minute + AM/PM
+ * The settings dropdown lists every layout file by its "name" field, with a docs link
+ * from its "link" field. The layout draws from the segment's top-left; position it with
+ * the segment's 2D bounds. Corner LEDs can count the minutes a 5-minute face can't show.
  *
  * It also has an integrated Open-Meteo weather client (free, no API key) that:
  *   - feeds the outdoor temperature to the WARM/COOL/HOT/COLD words, and
@@ -36,7 +37,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.3.0"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.4.0"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -75,91 +76,62 @@ struct WcfxLayout {
   const WcfxLayoutWord *words;   // PROGMEM for the built-in tables, heap for custom
 };
 
-// ---- Built-in layout: 16x16 exact-minute (the original MK2 face) ----------------
-static const WcfxLayoutWord wcWords16[] PROGMEM = {
-  {WR_IT,        0, 0,2}, {WR_IS,        3, 0,2},
-  {WR_MINUTES,   0, 7,7}, {WR_QUARTER,   8, 7,7},
-  {WR_A,         7, 5,1},              // standalone 'A' (between SIXTEEN/EIGHTEEN) for "A QUARTER"
-  {WR_HALF,      0, 8,4}, {WR_PAST,      5, 8,4},
-  {WR_TO,       10, 8,5},              // tile reads "UNTIL"
-  {WR_OCLOCK,    1,12,6},
-  {WR_IN,       10,12,2}, {WR_THE,      13,12,3},
-  {WR_AT,        0,14,2},              // same row as NIGHT -> "AT NIGHT"
-  {WR_MORNING,   9,13,7}, {WR_AFTERNOON, 0,13,9}, {WR_EVENING, 9,14,7}, {WR_NIGHT, 3,14,5},
-  // temperature words (bottom row 15): "& WARM COOL HOT COLD"
-  {WR_AMP,       0,15,1},
-  {WR_COLD,     12,15,4}, {WR_COOL,      5,15,4}, {WR_WARM,    1,15,4}, {WR_HOT,   9,15,3},
-  // minute numbers 1..20 (no FIFTEEN tile: "A QUARTER" is grammar-handled)
-  {WR_M1,      13, 0,3},  // ONE
-  {WR_M1+ 1,    0, 1,3},  // TWO
-  {WR_M1+ 2,    0, 3,5},  // THREE
-  {WR_M1+ 3,   12, 2,4},  // FOUR
-  {WR_M1+ 4,    0, 2,4},  // FIVE
-  {WR_M1+ 5,    0, 5,3},  // SIX      (inside SIXTEEN)
-  {WR_M1+ 6,    0, 6,5},  // SEVEN    (inside SEVENTEEN)
-  {WR_M1+ 7,    8, 5,5},  // EIGHT    (inside EIGHTEEN)
-  {WR_M1+ 8,    6, 3,4},  // NINE     (inside NINETEEN)
-  {WR_M1+ 9,    4, 1,3},  // TEN
-  {WR_M1+10,    5, 2,6},  // ELEVEN
-  {WR_M1+11,   10, 6,6},  // TWELVE
-  {WR_M1+12,    8, 1,8},  // THIRTEEN
-  {WR_M1+13,    0, 4,8},  // FOURTEEN
-  {WR_M1+15,    0, 5,7},  // SIXTEEN
-  {WR_M1+16,    0, 6,9},  // SEVENTEEN
-  {WR_M1+17,    8, 5,8},  // EIGHTEEN
-  {WR_M1+18,    6, 3,8},  // NINETEEN
-  {WR_M20,      6, 0,6},  // TWENTY
-  // hours 1..12 (rows 9..11)
-  {WR_H1,      13,11,3},  // ONE
-  {WR_H1+ 1,   11,11,3},  // TWO
-  {WR_H1+ 2,    5, 9,5},  // THREE
-  {WR_H1+ 3,    7,11,4},  // FOUR
-  {WR_H1+ 4,    3,11,4},  // FIVE
-  {WR_H1+ 5,    0,11,3},  // SIX
-  {WR_H1+ 6,    0, 9,5},  // SEVEN
-  {WR_H1+ 7,    0,10,5},  // EIGHT
-  {WR_H1+ 8,    6,10,4},  // NINE
-  {WR_H1+ 9,    4,10,3},  // TEN  (the "TEN" inside row 10 "EIGHTEN")
-  {WR_H1+10,   10, 9,6},  // ELEVEN
-  {WR_H12,     10,10,6},  // TWELVE
-};
+// ---- Stock layouts: embedded as JSON, seeded to the FS at boot -------------------
+// Every layout is a /wcfx-*.json file; the two stock faces below are written to the
+// filesystem if missing (delete a stock file to restore it on reboot). The embedded
+// 16x16 JSON is also the guaranteed fallback when the selected file is missing or
+// invalid. Schema: {"name","link","w","h","grammar","words":[[role,x,y,len],...]}.
 
-// ---- Built-in layout: 11x10 "WordClock 2022" (printables.com/model/311949) ------
-// 5-minute phrasing with AM/PM; minute FIVE/TEN and hour FIVE/TEN are distinct tiles.
-// TWENTYFIVE lights as TWENTY + FIVE (contiguous on row 2, cols 0..9).
-static const WcfxLayoutWord wcWords11[] PROGMEM = {
-  {WR_IT,      0,0,2}, {WR_IS,     3,0,2}, {WR_AM,     7,0,2}, {WR_PM,     9,0,2},
-  {WR_A,       0,1,1}, {WR_QUARTER,2,1,7},
-  {WR_M20,     0,2,6}, {WR_M1+4,   6,2,4},                     // TWENTY, FIVE (minutes)
-  {WR_HALF,    0,3,4}, {WR_M1+9,   5,3,3}, {WR_TO,     9,3,2}, // HALF, TEN (minutes), TO
-  {WR_PAST,    0,4,4}, {WR_H1+8,   7,4,4},                     // PAST, NINE
-  {WR_H1,      0,5,3}, {WR_H1+5,   3,5,3}, {WR_H1+2,   6,5,5}, // ONE SIX THREE
-  {WR_H1+3,    0,6,4}, {WR_H1+4,   4,6,4}, {WR_H1+1,   8,6,3}, // FOUR FIVE TWO
-  {WR_H1+7,    0,7,5}, {WR_H1+10,  5,7,6},                     // EIGHT ELEVEN
-  {WR_H1+6,    0,8,5}, {WR_H12,    5,8,6},                     // SEVEN TWELVE
-  {WR_H1+9,    0,9,3}, {WR_OCLOCK, 5,9,6},                     // TEN (hours), O'CLOCK
-};
+// 16x16 exact-minute (the original MK2 face). The TO tile reads "UNTIL" (alias role);
+// no m15: "A QUARTER" is grammar-handled.
+static const char WCFX_JSON_16X16[] PROGMEM = R"({"name":"16x16 Exact Minute",)"
+  R"("link":"https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16",)"
+  R"("w":16,"h":16,"grammar":"exact","words":[)"
+  R"(["it",0,0,2],["is",3,0,2],["minutes",0,7,7],["quarter",8,7,7],["a",7,5,1],)"
+  R"(["half",0,8,4],["past",5,8,4],["until",10,8,5],["oclock",1,12,6],)"
+  R"(["in",10,12,2],["the",13,12,3],["at",0,14,2],)"
+  R"(["morning",9,13,7],["afternoon",0,13,9],["evening",9,14,7],["night",3,14,5],)"
+  R"(["amp",0,15,1],["cold",12,15,4],["cool",5,15,4],["warm",1,15,4],["hot",9,15,3],)"
+  R"(["m1",13,0,3],["m2",0,1,3],["m3",0,3,5],["m4",12,2,4],["m5",0,2,4],)"
+  R"(["m6",0,5,3],["m7",0,6,5],["m8",8,5,5],["m9",6,3,4],["m10",4,1,3],)"
+  R"(["m11",5,2,6],["m12",10,6,6],["m13",8,1,8],["m14",0,4,8],)"
+  R"(["m16",0,5,7],["m17",0,6,9],["m18",8,5,8],["m19",6,3,8],["m20",6,0,6],)"
+  R"(["h1",13,11,3],["h2",11,11,3],["h3",5,9,5],["h4",7,11,4],["h5",3,11,4],["h6",0,11,3],)"
+  R"(["h7",0,9,5],["h8",0,10,5],["h9",6,10,4],["h10",4,10,3],["h11",10,9,6],["h12",10,10,6]]})";
 
-// Layout metadata stays in RAM (a few bytes each); only the word tables are in PROGMEM.
-static const WcfxLayout WCFX_LAYOUT_16X16 =
-  { 16, 16, WCFX_GRAM_EXACT, (uint8_t)(sizeof(wcWords16)/sizeof(wcWords16[0])), wcWords16 };
-static const WcfxLayout WCFX_LAYOUT_11X10 =
-  { 11, 10, WCFX_GRAM_FIVE,  (uint8_t)(sizeof(wcWords11)/sizeof(wcWords11[0])), wcWords11 };
+// 11x10 "WordClock 2022" — 5-minute phrasing with AM/PM; minute FIVE/TEN and hour
+// FIVE/TEN are distinct tiles; TWENTYFIVE lights as TWENTY + FIVE (contiguous row 2).
+static const char WCFX_JSON_11X10[] PROGMEM = R"({"name":"11x10 WordClock 2022",)"
+  R"("link":"https://www.printables.com/model/311949-wordclock-2022",)"
+  R"("w":11,"h":10,"grammar":"five","words":[)"
+  R"(["it",0,0,2],["is",3,0,2],["am",7,0,2],["pm",9,0,2],)"
+  R"(["a",0,1,1],["quarter",2,1,7],)"
+  R"(["m20",0,2,6],["m5",6,2,4],)"
+  R"(["half",0,3,4],["m10",5,3,3],["to",9,3,2],)"
+  R"(["past",0,4,4],["h9",7,4,4],)"
+  R"(["h1",0,5,3],["h6",3,5,3],["h3",6,5,5],)"
+  R"(["h4",0,6,4],["h5",4,6,4],["h2",8,6,3],)"
+  R"(["h8",0,7,5],["h11",5,7,6],)"
+  R"(["h7",0,8,5],["h12",5,8,6],)"
+  R"(["h10",0,9,3],["oclock",5,9,6]]})";
 
-// Fetch one word from a layout table. Built-in tables live in PROGMEM, so members must
-// not be read directly (crashes on ESP8266); memcpy_P also handles the RAM-resident
-// custom table, so all access is uniform.
+static const char WCFX_FILE_16X16[] = "/wcfx-16x16.json";
+static const char WCFX_FILE_11X10[] = "/wcfx-11x10.json";
+
+// Ultimate fallback if even the flash JSON can't parse (OOM): renders background only.
+static const WcfxLayout WCFX_LAYOUT_EMPTY = { 16, 16, WCFX_GRAM_EXACT, 0, nullptr };
+
+// Fetch one word from a layout's word table (heap-resident — every layout is parsed
+// from JSON into RAM).
 static inline WcfxLayoutWord wcfxWordAt(const WcfxLayout &L, uint8_t i) {
-  WcfxLayoutWord w;
-  memcpy_P(&w, &L.words[i], sizeof(w));
-  return w;
+  return L.words[i];
 }
 
 // Config/state mirrors maintained by the usermod, read by the (free) effect function.
 static bool    wcfx_showPeriod = true;
 static bool    wcfx_showTemp   = false;   // light a temperature word (if the layout has them)
 static uint8_t wcfx_tempBand   = 0;       // 0 none, 1 COLD, 2 COOL, 3 WARM, 4 HOT
-static const WcfxLayout *wcfx_layout    = &WCFX_LAYOUT_16X16;  // active layout
+static const WcfxLayout *wcfx_layout    = &WCFX_LAYOUT_EMPTY;  // active layout
 static uint8_t           wcfx_layoutGen = 0;  // bumped on layout change -> effect rebuilds
 
 // OR one word's cells into the row bitmask (bit x of row y == cell lit).
@@ -343,11 +315,13 @@ class WordClockFxUsermod : public Usermod {
     bool showPeriod = true;
     bool everConnected = false;   // first WiFi connect after boot has happened
 
-    // Layout selection: 0 = 16x16 exact-minute, 1 = 11x10 WordClock 2022, 2 = custom file.
-    uint8_t         layoutSel    = 0;
-    WcfxLayout      customLayout = { 0, 0, 0, 0, nullptr };
-    WcfxLayoutWord *customWords  = nullptr;   // heap table backing customLayout
-    String          layoutStatus;             // custom-file parse result (shown on the Info page)
+    // Layout selection: a /wcfx-*.json filename in the FS root (stock faces are seeded).
+    String          layoutFile   = "wcfx-16x16.json";
+    WcfxLayout      curLayout    = { 0, 0, 0, 0, nullptr };
+    WcfxLayoutWord *curWords     = nullptr;   // heap table backing curLayout
+    String          layoutName;               // "name" from the loaded layout file
+    String          layoutLink;               // "link" (docs URL) from the loaded layout file
+    String          layoutStatus;             // parse result (shown on the Info page)
     uint8_t         wcfxEffectId = 255;       // effect id from strip.addEffect (gates minute dots)
 
     // Temperature words. All thresholds/values are in °C (band selection compares °C);
@@ -573,7 +547,7 @@ class WordClockFxUsermod : public Usermod {
       return RGBW32((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, 0);
     }
 
-    // Map a role token from /wordclock.json to a WcfxRole; -1 if unknown.
+    // Map a role token from a layout file to a WcfxRole; -1 if unknown.
     // Fixed names are in WcfxRole enum order; "until" aliases "to"; mN/hN are numeric.
     static int roleFromToken(const char *t) {
       static const char* const names[] = {
@@ -594,22 +568,31 @@ class WordClockFxUsermod : public Usermod {
       return -1;
     }
 
-    // Parse /wordclock.json (uploaded via WLED's /edit page) into customLayout.
-    // On any failure the active layout falls back to the built-in 16x16 and
-    // layoutStatus carries the error for the Info page. wcfx_layout is repointed
-    // to a safe layout BEFORE the old word table is freed — never dangling.
-    bool loadCustomLayout() {
-      wcfx_layout = &WCFX_LAYOUT_16X16;
-      customLayout.wordCount = 0;
-      delete[] customWords; customWords = nullptr;
+    // Sanitize a string for embedding in the settings-page JS: one weird layout file
+    // must not be able to break the whole page (unbalanced quote = all fields render raw).
+    static String wcfxJsSan(const String &s, uint8_t maxLen = 128) {
+      String o; o.reserve(s.length());
+      for (unsigned i = 0; i < s.length() && i < maxLen; i++) {
+        const char c = s[i];
+        o += (c == '"' || c == '\'' || c == '\\' || c == '<' || c == '>' || (uint8_t)c < 0x20) ? '_' : c;
+      }
+      return o;
+    }
+    // One JS array entry: ["file","name","link"], (trailing comma is legal in JS).
+    static String wcfxJsEntry(const String &fn, const String &nm, const String &lk) {
+      String out = F("[\"");
+      out += wcfxJsSan(fn);     out += F("\",\"");
+      out += wcfxJsSan(nm, 40); out += F("\",\"");
+      out += wcfxJsSan(lk);     out += F("\"],");
+      return out;
+    }
 
-      File f = WLED_FS.open("/wordclock.json", "r");
-      if (!f) { layoutStatus = F("error: /wordclock.json not found (upload via /edit)"); return false; }
-      DynamicJsonDocument doc(4096);   // our own arena; never WLED's pinned doc
-      const DeserializationError err = deserializeJson(doc, f);
-      f.close();
-      if (err) { layoutStatus = String(F("error: ")) + err.c_str(); return false; }
-
+    // Shared back half of the layout loaders: validate the parsed JSON and swap it in.
+    // On success the heap word table replaces the previous one (wcfx_layout is repointed
+    // to a safe layout BEFORE the old table is freed — never dangling; settings saves run
+    // in the async_tcp task while the effect renders from loop). On failure the currently
+    // active layout is left untouched and layoutStatus carries the error.
+    bool parseLayoutDoc(JsonDocument &doc, const char *src) {
       const int w = doc["w"] | 0, h = doc["h"] | 0;
       const char *gs = doc["grammar"] | "five";
       uint8_t grammar;
@@ -641,22 +624,63 @@ class WordClockFxUsermod : public Usermod {
         }
         tbl[n++] = { (uint8_t)role, (uint8_t)x, (uint8_t)y, (uint8_t)len };
       }
-      customWords  = tbl;
-      customLayout = { (uint8_t)w, (uint8_t)h, grammar, n, customWords };
-      wcfx_layout  = &customLayout;
+      layoutName = doc["name"] | src;    // display name; falls back to the source label
+      layoutLink = doc["link"] | "";     // docs URL for the Info page / settings link
+      layoutLink.replace("\"", ""); layoutLink.replace("<", "");  // injection-safe
+      wcfx_layout = &WCFX_LAYOUT_EMPTY;  // repoint BEFORE freeing the old table
+      delete[] curWords;
+      curWords  = tbl;
+      curLayout = { (uint8_t)w, (uint8_t)h, grammar, n, curWords };
+      wcfx_layout = &curLayout;
       layoutStatus = String(F("ok: ")) + n + F(" words, ") + w + 'x' + h + ' ' + gs;
       return true;
     }
 
-    // Point wcfx_layout at the selected layout (called from setup() and readFromConfig()).
+    // Load a layout from a filesystem file (uploaded via WLED's /edit page).
+    // The doc is our own arena, never WLED's pinned doc; 8k — the 16x16 file needs >4k.
+    bool loadLayoutFile(const char *path) {
+      File f = WLED_FS.open(path, "r");
+      if (!f) { layoutStatus = String(F("error: ")) + path + F(" not found"); return false; }
+      DynamicJsonDocument doc(8192);
+      const DeserializationError err = deserializeJson(doc, f);
+      f.close();
+      if (err) { layoutStatus = String(F("error: ")) + err.c_str(); return false; }
+      return parseLayoutDoc(doc, path);
+    }
+
+    // Load one of the embedded stock layouts straight from flash.
+    bool loadLayoutFlash(PGM_P json, const char *label) {
+      DynamicJsonDocument doc(8192);
+      const DeserializationError err = deserializeJson(doc, FPSTR(json));
+      if (err) { layoutStatus = String(F("error: ")) + err.c_str(); return false; }
+      return parseLayoutDoc(doc, label);
+    }
+
+    // Seed the stock layout files if missing (user edits are preserved; delete a
+    // stock file to restore it on the next reboot).
+    static void seedLayoutFile(const char *path, PGM_P json) {
+      if (WLED_FS.exists(path)) return;
+      File f = WLED_FS.open(path, "w");
+      if (f) { f.print(FPSTR(json)); f.close(); }
+    }
+    static void seedLayoutFiles() {
+      seedLayoutFile(WCFX_FILE_16X16, WCFX_JSON_16X16);
+      seedLayoutFile(WCFX_FILE_11X10, WCFX_JSON_11X10);
+      // v1.3.0 kept the custom layout in /wordclock.json; move it into the wcfx- scheme.
+      if (WLED_FS.exists(F("/wordclock.json")) && !WLED_FS.exists(F("/wcfx-custom.json")))
+        WLED_FS.rename(F("/wordclock.json"), F("/wcfx-custom.json"));
+    }
+
+    // Load the selected layout file, falling back to the embedded 16x16 when it's
+    // missing/invalid. Called from setup(), readFromConfig() and the reloadLayout API.
     void applyLayout() {
-      if (layoutSel == 2) {
-        loadCustomLayout();               // falls back to the 16x16 internally on error
-      } else {
-        wcfx_layout  = (layoutSel == 1) ? &WCFX_LAYOUT_11X10 : &WCFX_LAYOUT_16X16;
-        layoutStatus = "";
+      const String path = layoutFile.startsWith("/") ? layoutFile : String('/') + layoutFile;
+      if (!loadLayoutFile(path.c_str())) {
+        const String err = layoutStatus;   // keep the real error for the Info page
+        if (!loadLayoutFlash(WCFX_JSON_16X16, "built-in 16x16")) wcfx_layout = &WCFX_LAYOUT_EMPTY;
+        layoutStatus = err + F(" (using built-in 16x16)");
       }
-      wcfx_layoutGen++;                   // effect rebuilds (crossfades) on next frame
+      wcfx_layoutGen++;                    // effect rebuilds (crossfades) on next frame
     }
 
     // True when any active segment is running the Word Clock FX effect.
@@ -735,7 +759,10 @@ class WordClockFxUsermod : public Usermod {
       }
       wcfx_showPeriod = showPeriod;
       wcfx_showTemp   = showTemp;
-      applyLayout();   // idempotent; readFromConfig already ran (FS is mounted before both)
+      // readFromConfig already ran (pre-seed it falls back to the embedded 16x16);
+      // seed the stock files, then load the selected one for real.
+      seedLayoutFiles();
+      applyLayout();
     #ifdef WCFX_DEFAULT_TRANSITION_MS
       // Override the boot transition (runs after cfg load), set via build flag in the
       // platformio override, e.g. -D WCFX_DEFAULT_TRANSITION_MS=1800 for 1.8 s.
@@ -828,7 +855,7 @@ class WordClockFxUsermod : public Usermod {
       int n;
       if (getJsonValue(top[F("wxtest")], n) && n >= 1 && n < WX_COUNT) pendingTest = (uint8_t)n;
       if (getJsonValue(top[F("ledtest")], n) && n >= 0) { testLed = n; testLedUntil = millis() + 3000; }
-      if (top[F("reloadLayout")].as<bool>()) applyLayout();   // re-read /wordclock.json without reboot
+      if (top[F("reloadLayout")].as<bool>()) applyLayout();   // re-read the layout file without reboot
     }
 
     void addToJsonInfo(JsonObject &root) override {
@@ -836,10 +863,17 @@ class WordClockFxUsermod : public Usermod {
       if (user.isNull()) user = root.createNestedObject(F("u"));
       user.createNestedArray(F("Word Clock FX")).add(F("v" WCFX_VERSION));
 
+      // Layout row: name as a clickable docs link (Info values render via innerHTML,
+      // same mechanism as the weather source link); parse errors show as plain text.
       JsonArray aLay = user.createNestedArray(F("Word Clock layout"));
-      if (layoutSel == 2)      aLay.add(layoutStatus.length() ? layoutStatus : String(F("custom")));
-      else if (layoutSel == 1) aLay.add(F("11x10 WordClock 2022"));
-      else                     aLay.add(F("16x16 exact-minute"));
+      if (layoutStatus.startsWith(F("error"))) {
+        aLay.add(layoutStatus);
+      } else {
+        String v = layoutName.length() ? layoutName : layoutStatus;
+        if (layoutLink.length())
+          v = String(F("<a href=\"")) + layoutLink + F("\" target=\"_blank\">") + v + F("</a>");
+        aLay.add(v);
+      }
 
       const bool wx = fetchWeather || everOk;   // also show once a manual fetch has succeeded
       if (!showTemp && !wx) return;
@@ -909,7 +943,7 @@ class WordClockFxUsermod : public Usermod {
       // Weather->Presets, Temperature words.
       top[FPSTR(_enabled)]     = enabled;
       top[FPSTR(_showPeriod)]  = showPeriod;
-      top[FPSTR(_layout)]      = layoutSel;
+      top[FPSTR(_layout)]      = layoutFile;   // String -> form "text" descriptor, round-trips
       top[F("cornerLeds")]     = cornerLeds;
       top[F("cornerColor")]    = cornerColorHex;
       top[FPSTR(_minuteDots)]  = minuteDots;
@@ -951,7 +985,14 @@ class WordClockFxUsermod : public Usermod {
       bool configComplete = !top.isNull();
       configComplete &= getJsonValue(top[FPSTR(_enabled)],     enabled);
       configComplete &= getJsonValue(top[FPSTR(_showPeriod)],  showPeriod);
-      configComplete &= getJsonValue(top[FPSTR(_layout)],      layoutSel, 0);  // absent -> 16x16, no regression
+      // Layout = filename. v1.3.0 stored an int 0/1/2 — migrate (ArduinoJson stringifies
+      // stored ints, so the old 1 reads back as "1"); persisted on the next settings save.
+      String ls;
+      configComplete &= getJsonValue(top[FPSTR(_layout)],      ls, "wcfx-16x16.json");
+      if      (ls == F("0")) ls = F("wcfx-16x16.json");
+      else if (ls == F("1")) ls = F("wcfx-11x10.json");
+      else if (ls == F("2")) ls = F("wcfx-custom.json");   // was /wordclock.json (renamed at boot)
+      if (ls.length()) layoutFile = ls;
       configComplete &= getJsonValue(top[FPSTR(_showTemp)],    showTemp);
       configComplete &= getJsonValue(top[FPSTR(_fahrenheit)],  tempFahrenheit);
       configComplete &= getJsonValue(top[FPSTR(_thrColdCool)], thrColdCool);
@@ -995,7 +1036,6 @@ class WordClockFxUsermod : public Usermod {
       if (thrWarmHot  < thrCoolWarm) thrWarmHot  = thrCoolWarm;
       wcfx_showPeriod = showPeriod;
       wcfx_showTemp   = showTemp;
-      if (layoutSel > 2) layoutSel = 0;
       applyLayout();
       return configComplete;
     }
@@ -1056,11 +1096,41 @@ class WordClockFxUsermod : public Usermod {
                 "wcfxlbl('cornerLeds','Light LED on press');wcfxlbl('cornerColor','LED color');"
                 "wcfxlbl('minuteDots','Minute dots');"));
       oappend(F("wcfxsec('cornerLeds','Corner buttons');"));
-      // Layout dropdown (replaces the numeric input in place; values match layoutSel).
-      oappend(F("(function(){var dd=addDropdown('WordClockFx','layout');if(!dd)return;"
-                "addOption(dd,'16x16 exact-minute',0);"
-                "addOption(dd,'11x10 WordClock 2022',1);"
-                "addOption(dd,'Custom (/wordclock.json)',2);})();"));
+      // Layout dropdown: scan the FS root for wcfx-*.json, label each option by the
+      // file's "name" field, and wire a "layout docs" link from its "link" field.
+      // Only the [file,name,link] entries are runtime-built (sanitized via wcfxJsEntry);
+      // head/tail are fixed literals so the quote-balance risk stays contained.
+      oappend(F("(function(){var L=["));
+      {
+        File dir = WLED_FS.open("/", "r");
+        bool selSeen = false; uint8_t cnt = 0;
+        for (File f = dir.openNextFile(); f && cnt < 24; f = dir.openNextFile()) {
+          String fn = f.name();
+          if (fn.startsWith("/")) fn = fn.substring(1);
+          if (!fn.startsWith(F("wcfx-")) || !fn.endsWith(F(".json"))) continue;
+          StaticJsonDocument<64>  filter; filter["name"] = true; filter["link"] = true;
+          StaticJsonDocument<384> doc;    // local docs: no WLED JSON-buffer lock needed
+          deserializeJson(doc, f, DeserializationOption::Filter(filter));
+          const String nm = doc["name"] | fn.c_str();   // no name -> show the filename
+          const String lk = doc["link"] | "";
+          if (fn == layoutFile) selSeen = true;
+          cnt++;
+          oappend(wcfxJsEntry(fn, nm, lk).c_str());
+        }
+        dir.close();
+        // Keep a vanished selection visible so saving doesn't silently snap to the
+        // first option and rewrite the config.
+        if (!selSeen && layoutFile.length())
+          oappend(wcfxJsEntry(layoutFile, layoutFile + F(" (missing)"), "").c_str());
+      }
+      oappend(F("];L.sort(function(a,b){return a[1]<b[1]?-1:a[1]>b[1]?1:0;});"
+                "var dd=addDropdown('WordClockFx','layout');if(!dd)return;var m={};"
+                "for(var i=0;i<L.length;i++){addOption(dd,L[i][1],L[i][0]);m[L[i][0]]=L[i][2];}"
+                "var a=document.createElement('a');a.id='wcfxlink';a.target='_blank';"
+                "a.className='wcfxi';a.textContent='layout docs';"
+                "dd.parentNode.insertBefore(a,dd.nextSibling);"
+                "var u=function(){var l=m[dd.value]||'';a.style.display=l?'':'none';a.href=l;};"
+                "dd.addEventListener('change',u);u();})();"));
       // ---- tables -------------------------------------------------------------
       oappend(F("wcfxtbl(['Setting','Value'],[['Show temperature words',['showTemperature']],"
                 "['Use \\u00B0F (display only)',['fahrenheit']],['Cold below (\\u00B0C)',['coldBelow']],"
@@ -1082,7 +1152,7 @@ class WordClockFxUsermod : public Usermod {
       oappend(F("addInfo('WordClockFx:useWledLocation', 1, \"<i class='wcfxi'>else use Place / lat-lon</i>\");"));
       oappend(F("addInfo('WordClockFx:place', 1, \"<i class='wcfxi'>city or ZIP</i>\");"));
       oappend(F("addInfo('WordClockFx:longitude', 1, \"<i class='wcfxi'><a href='https://www.latlong.net' target='_blank'>find lat/lon</a></i>\");"));
-      oappend(F("addInfo('WordClockFx:layout', 1, \"<i class='wcfxi'>custom: upload /wordclock.json via /edit; position with the segment's 2D bounds</i>\");"));
+      oappend(F("addInfo('WordClockFx:layout', 1, \"<i class='wcfxi'>add faces: upload wcfx-*.json via /edit; delete a stock file to restore it; position via the segment's 2D bounds</i>\");"));
       oappend(F("addInfo('WordClockFx:cornerLeds', 1, \"<i class='wcfxi'>native WLED buttons; lights mapped LED while held</i>\");"));
       oappend(F("addInfo('WordClockFx:cornerColor', 1, \"<i class='wcfxi'>hex RGB or RGBW</i>\");"));
       oappend(F("addInfo('WordClockFx:minuteDots', 1, \"<i class='wcfxi'>corner LEDs count the minutes a 5-minute layout can't show (minute % 5)</i>\");"));

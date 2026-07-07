@@ -6,8 +6,9 @@ Operational knowledge for AI agents / contributors working in this repo. End-use
 ## What this is
 
 An **out-of-tree WLED community usermod**: a first-class WLED Effect ("Word Clock FX") for
-RGBW matrix word clocks, with selectable layouts (16×16 exact-minute default, 11×10
-"WordClock 2022" 5-minute, custom from `/wordclock.json`), period-of-day / AM-PM and
+RGBW matrix word clocks. Layouts are `/wcfx-*.json` files on the WLED FS (stock 16×16
+exact-minute + 11×10 "WordClock 2022" seeded at boot; users add their own via `/edit`),
+selected by a settings dropdown built from a FS scan. Plus period-of-day / AM-PM and
 temperature words, an optional Open-Meteo weather client (weather → preset switching),
 corner-button → LED feedback and corner-LED minute dots. **All code lives in one file:
 `usermod_word_clock_fx.cpp`** (~1100 lines). MIT licensed.
@@ -83,19 +84,28 @@ Gotchas:
 In file order:
 - **Layouts + `wcfxBuildMask()`** — a layout (`WcfxLayout`) = dims + grammar id + a role-tagged
   word table (`WcfxLayoutWord {role,x,y,len}`, roles in `WcfxRole`: WR_IT…WR_HOT, WR_M1..M20/M25,
-  WR_H1..H12). Built-in tables (`wcWords16`, `wcWords11`) are **PROGMEM — access only via
-  `wcfxWordAt()`/`memcpy_P`**. Two grammar engines (exact-minute / floored 5-minute) drive any
-  layout via `wcfxLightRole()`; roles a layout lacks are silent no-ops. Mask is
+  WR_H1..H12). Stock faces are **embedded JSON strings** (`WCFX_JSON_16X16`/`WCFX_JSON_11X10`,
+  PROGMEM) seeded to `/wcfx-16x16.json` / `/wcfx-11x10.json` at boot if missing (delete a file to
+  restore stock). Two grammar engines (exact-minute / floored 5-minute) drive any layout via
+  `wcfxLightRole()`; roles a layout lacks are silent no-ops. Mask is
   `WcfxRow(uint32_t)[WCFX_MAX_H]` (max 32×32). Works in logical X/Y only (serpentine handled by
   WLED 2D cfg); the layout draws from the segment's top-left (position via segment 2D bounds).
   The active layout is the global `wcfx_layout`; bump `wcfx_layoutGen` after changing it.
 - **`mode_word_clock_fx()`** — the effect; per-segment state `WCFXRt` in `SEGENV.data`
   (`allocateData`), crossfades via `strip.getTransition()`, rebuilds on minute/band/layout-gen
   change.
-- **Custom layouts** — `loadCustomLayout()` parses `/wordclock.json` (own `DynamicJsonDocument`,
-  never WLED's pinned doc) into a heap table; on any error it falls back to the 16×16 **before**
-  freeing the old table (no dangling `wcfx_layout`). Status string surfaces on the Info page;
-  `{"WordClockFx":{"reloadLayout":true}}` re-reads without reboot.
+- **Layout loading** — every layout is parsed from JSON into a heap table:
+  `loadLayoutFile()`/`loadLayoutFlash()` → `parseLayoutDoc()` (own `DynamicJsonDocument(8192)` —
+  **8k, the 16×16 file overflows 4k**; never WLED's pinned doc). Fallback chain: selected file →
+  embedded 16×16 → `WCFX_LAYOUT_EMPTY`. `parseLayoutDoc` repoints `wcfx_layout` to a safe layout
+  **before** freeing the old table (settings saves run in async_tcp while the effect renders);
+  on validation failure the active layout is left untouched. Schema adds `"name"` (dropdown
+  label) + `"link"` (docs URL). Config key `layout` is a **String filename** (v1.3.0 ints 0/1/2
+  migrate in `readFromConfig`; `/wordclock.json` renamed to `/wcfx-custom.json` at boot). Status
+  string surfaces on the Info page; `{"WordClockFx":{"reloadLayout":true}}` re-reads without
+  reboot. The settings dropdown is built in `appendConfigData` from a root-FS scan of
+  `wcfx-*.json` — the runtime-emitted `["file","name","link"]` entries go through `wcfxJsSan()`
+  (one bad layout file must never break the settings-page JS).
 - **`WxState` enum + `codeToState()`** — WMO code → weather state. `WX_SEVERE` is
   **intentionally never produced here** (Open-Meteo has no tornado code); it's pushed externally
   via JSON API / Home Assistant. Keep the comment that says so.
