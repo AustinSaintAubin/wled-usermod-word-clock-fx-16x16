@@ -38,25 +38,25 @@ git URL in `custom_usermods`:
 custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
 ```
 
-The user's WLED checkout is a **sibling** of this repo:
-`/home/austin.st.aubin/Documents/PlatformIO/WLED` (this repo is
-`/home/austin.st.aubin/Documents/PlatformIO/wled-usermod-word-clock-fx-16x16`). That checkout has
-a **gitignored** `platformio_override.ini` already wired up with env
-`esp32dev_lolin32_wordclock_16x16` (plus an `_ota` upload variant) — it is not in any repo, so
-verify it exists before relying on it.
+Building requires a **local WLED checkout**, assumed below at `../WLED` (a sibling of this
+repo) — adjust paths if yours lives elsewhere. The WLED checkout's `platformio_override.ini`
+(gitignored, so it may not exist yet) holds the build env: if missing, create it from
+[examples/platformio_override.sample.ini](examples/platformio_override.sample.ini) (copy to the
+WLED repo root as `platformio_override.ini`), which defines envs `esp32dev_wordclock_16x16` and
+`esp32dev_wordclock_16x16_ota`.
 
 ### Build & verify loop (do this for every code change)
 
-All `pio` commands must run **in the WLED checkout** (cd there, or pass
-`-d /home/austin.st.aubin/Documents/PlatformIO/WLED`).
+`pio` is the PlatformIO CLI (a VSCode PlatformIO install puts it at `~/.platformio/penv/bin/pio`).
+The `-d` flag points it at the WLED checkout so the commands work from any directory.
 
-1. In `/home/austin.st.aubin/Documents/PlatformIO/WLED/platformio_override.ini`, point
-   `custom_usermods` at the **local checkout** instead of the git URL: comment out the
+1. In `../WLED/platformio_override.ini`, point `custom_usermods` at your **local checkout**
+   instead of the git URL: comment out the
    `https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main` line and
-   enable (or add) this one in the same multiline block:
-   `symlink:///home/austin.st.aubin/Documents/PlatformIO/wled-usermod-word-clock-fx-16x16`
-2. Build:
-   `~/.platformio/penv/bin/pio run -d /home/austin.st.aubin/Documents/PlatformIO/WLED -e esp32dev_lolin32_wordclock_16x16`
+   enable (or add) this one in the same multiline block — `symlink://` requires an **absolute**
+   path:
+   `symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`
+2. Build: `pio run -d ../WLED -e esp32dev_wordclock_16x16`
    - Success = `[SUCCESS]`, ~83% flash, and the mod named in
      `INFO: Code from usermod libraries found in binary: … wled-usermod-word-clock-fx-16x16`.
 3. **Restore the git-URL line** (and re-comment the symlink) in the override before finishing.
@@ -64,17 +64,15 @@ All `pio` commands must run **in the WLED checkout** (cd there, or pass
    if you touched `appendConfigData()`, the user must load the usermod settings page in a
    browser to confirm.
 
-If the user's `platformio_override.ini` is missing or unrecognizable, don't guess — recreate a
-minimal env from [examples/platformio_override.sample.ini](examples/platformio_override.sample.ini)
-(copy to the WLED repo root as `platformio_override.ini`, swap its `custom_usermods` URL for the
-symlink line above), or ask the user.
+If the existing `platformio_override.ini` is unrecognizable, don't guess — rebuild a minimal one
+from the sample above, or ask the user.
 
 Gotchas:
 - PlatformIO **caches** the git-fetched mod. After pushing to `main`, force a re-pull with
-  `rm -rf /home/austin.st.aubin/Documents/PlatformIO/WLED/.pio/libdeps/*/wled-usermod-word-clock-fx-16x16`
-  before rebuilding.
-- Flashing the device: `pio run -d … -e esp32dev_lolin32_wordclock_16x16_ota -t upload`
-  (OTA to `wordclock01.internal`) — **only when the user asks**; it changes their hardware.
+  `rm -rf ../WLED/.pio/libdeps/*/wled-usermod-word-clock-fx-16x16` before rebuilding.
+- Flashing the device: `pio run -d ../WLED -e esp32dev_wordclock_16x16_ota -t upload`
+  (OTA; the target host comes from `upload_port` in the override) — **only when the user asks**;
+  it changes their hardware.
 - If the device's Info panel shows an old version, it's running old firmware / a cached libdep —
   not necessarily a code bug.
 
@@ -130,8 +128,15 @@ are checkpoints. For each user-visible batch:
 2. Semver: breaking settings/config-key change → minor; fixes/UI polish → patch.
 3. Build-verify (loop above), commit with a
    `Co-Authored-By: Claude <model> <noreply@anthropic.com>` trailer, push `main`.
-4. `gh release create vX.Y.Z --title vX.Y.Z --notes "…"` (gh is authed as AustinSaintAubin).
-5. Mirror to the NAS backup (passwordless ssh, remote already configured):
-   `git push nas main --tags`.
+4. `gh release create vX.Y.Z --title vX.Y.Z --notes "…"` (gh must be authed as the repo owner).
 
-Docs-only changes (like this file): commit + push (GitHub **and** nas), no version bump.
+Docs-only changes (like this file): commit + push, no version bump.
+
+### Maintainer environment notes (Austin's workstation — ignore on other machines)
+
+- WLED checkout: `/home/austin.st.aubin/Documents/PlatformIO/WLED`; its personal override uses
+  env `esp32dev_lolin32_wordclock_16x16` (+ `_ota`) instead of the sample's names; `pio` lives at
+  `~/.platformio/penv/bin/pio`.
+- OTA target: `wordclock01.internal`.
+- A private NAS mirror is configured as git remote `nas` — after any push to GitHub, also run
+  `git push nas main --tags`.
