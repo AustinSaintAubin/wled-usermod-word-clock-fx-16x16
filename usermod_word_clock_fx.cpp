@@ -10,7 +10,7 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.4.0
+ * Version : 1.4.1
  * Updated : 2026-07-07
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
@@ -37,7 +37,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.4.0"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.4.1"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a

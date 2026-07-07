@@ -86,7 +86,10 @@ In file order:
   word table (`WcfxLayoutWord {role,x,y,len}`, roles in `WcfxRole`: WR_IT…WR_HOT, WR_M1..M20/M25,
   WR_H1..H12). Stock faces are **embedded JSON strings** (`WCFX_JSON_16X16`/`WCFX_JSON_11X10`,
   PROGMEM) seeded to `/wcfx-16x16.json` / `/wcfx-11x10.json` at boot if missing (delete a file to
-  restore stock). Two grammar engines (exact-minute / floored 5-minute) drive any layout via
+  restore stock). The repo's `layouts/` folder holds the **canonical copies**, generated
+  byte-for-byte from the embedded strings — when editing a `WCFX_JSON_*` string, regenerate
+  `layouts/wcfx-*.json` to match (the host-harness emit step does this).
+  Two grammar engines (exact-minute / floored 5-minute) drive any layout via
   `wcfxLightRole()`; roles a layout lacks are silent no-ops. Mask is
   `WcfxRow(uint32_t)[WCFX_MAX_H]` (max 32×32). Works in logical X/Y only (serpentine handled by
   WLED 2D cfg); the layout draws from the segment's top-left (position via segment 2D bounds).
@@ -154,7 +157,8 @@ are checkpoints. For each user-visible batch:
    `Co-Authored-By: Claude <model> <noreply@anthropic.com>` trailer, push `main`.
 4. `gh release create vX.Y.Z --title vX.Y.Z --notes "…"` (gh must be authed as the repo owner).
 
-Docs-only changes (like this file): commit + push, no version bump.
+**Every** change bumps the version — docs-only / file-organization batches are a **patch** bump
+(maintainer's rule: any change increments the version, even minor ones).
 
 ### Maintainer environment notes (Austin's workstation — ignore on other machines)
 

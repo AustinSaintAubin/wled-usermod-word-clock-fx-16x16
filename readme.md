@@ -130,7 +130,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.4.0` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.4.1` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
@@ -177,8 +177,8 @@ on the next reboot:
 | `wcfx-11x10.json` | 5-minute steps | The popular [WordClock 2022](https://www.printables.com/model/311949-wordclock-2022) face; AM/PM tiles (shown when `showPeriodOfDay` is on). |
 
 **Add your own face**: upload any `wcfx-<something>.json` via the `/edit` page (like
-`ledmap.json`), then pick it in the dropdown. The stock files double as templates — copies
-also live in [`examples/`](examples/). Format:
+`ledmap.json`), then pick it in the dropdown. The stock files double as templates — the
+canonical copies live in [`layouts/`](layouts/). Format:
 
 ```json
 { "name": "My 11x10", "link": "https://example.com/my-clock-docs",
