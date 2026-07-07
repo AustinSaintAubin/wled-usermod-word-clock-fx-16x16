@@ -5,10 +5,12 @@ Operational knowledge for AI agents / contributors working in this repo. End-use
 
 ## What this is
 
-An **out-of-tree WLED community usermod**: a first-class WLED Effect ("Word Clock FX") for a
-16×16 RGBW matrix, with English exact-minute phrasing, period-of-day and temperature words,
-an optional Open-Meteo weather client (weather → preset switching), and corner-button → LED
-feedback. **All code lives in one file: `usermod_word_clock_fx.cpp`** (~930 lines). MIT licensed.
+An **out-of-tree WLED community usermod**: a first-class WLED Effect ("Word Clock FX") for
+RGBW matrix word clocks, with selectable layouts (16×16 exact-minute default, 11×10
+"WordClock 2022" 5-minute, custom from `/wordclock.json`), period-of-day / AM-PM and
+temperature words, an optional Open-Meteo weather client (weather → preset switching),
+corner-button → LED feedback and corner-LED minute dots. **All code lives in one file:
+`usermod_word_clock_fx.cpp`** (~1100 lines). MIT licensed.
 
 It is *not* part of the WLED tree — WLED maintainers asked for it out-of-tree
 (wled/WLED#5708, closed). It's listed in the WLED community-usermods index (wled/WLED-Docs#336).
@@ -79,10 +81,21 @@ Gotchas:
 ## Architecture map (`usermod_word_clock_fx.cpp`)
 
 In file order:
-- **Word tables + `wcfxBuildMask()`** — grid geometry as `WcfxWord {x,y,len}` rows; builds a
-  16×`uint16_t` bitmask from time. Works in logical X/Y only (serpentine handled by WLED 2D cfg).
+- **Layouts + `wcfxBuildMask()`** — a layout (`WcfxLayout`) = dims + grammar id + a role-tagged
+  word table (`WcfxLayoutWord {role,x,y,len}`, roles in `WcfxRole`: WR_IT…WR_HOT, WR_M1..M20/M25,
+  WR_H1..H12). Built-in tables (`wcWords16`, `wcWords11`) are **PROGMEM — access only via
+  `wcfxWordAt()`/`memcpy_P`**. Two grammar engines (exact-minute / floored 5-minute) drive any
+  layout via `wcfxLightRole()`; roles a layout lacks are silent no-ops. Mask is
+  `WcfxRow(uint32_t)[WCFX_MAX_H]` (max 32×32). Works in logical X/Y only (serpentine handled by
+  WLED 2D cfg); the layout draws from the segment's top-left (position via segment 2D bounds).
+  The active layout is the global `wcfx_layout`; bump `wcfx_layoutGen` after changing it.
 - **`mode_word_clock_fx()`** — the effect; per-segment state `WCFXRt` in `SEGENV.data`
-  (`allocateData`), crossfades via `strip.getTransition()`.
+  (`allocateData`), crossfades via `strip.getTransition()`, rebuilds on minute/band/layout-gen
+  change.
+- **Custom layouts** — `loadCustomLayout()` parses `/wordclock.json` (own `DynamicJsonDocument`,
+  never WLED's pinned doc) into a heap table; on any error it falls back to the 16×16 **before**
+  freeing the old table (no dangling `wcfx_layout`). Status string surfaces on the Info page;
+  `{"WordClockFx":{"reloadLayout":true}}` re-reads without reboot.
 - **`WxState` enum + `codeToState()`** — WMO code → weather state. `WX_SEVERE` is
   **intentionally never produced here** (Open-Meteo has no tornado code); it's pushed externally
   via JSON API / Home Assistant. Keep the comment that says so.
@@ -90,7 +103,8 @@ In file order:
   TLS is disabled in the WLED framework build (`CONFIG_MBEDTLS_TLS_DISABLED=y`); do not attempt
   HTTPS/WiFiClientSecure/esp_http_client. 2000 ms timeout caps `loop()` blocking; `haveHumidity`/
   `haveWind` reset per response.
-- **`handleOverlayDraw()`** — corner-button → LED feedback using native WLED buttons
+- **`handleOverlayDraw()`** — corner-LED minute dots (`minute % 5` on `cbLed[]`, gated on the
+  effect being active) drawn first, then corner-button → LED feedback using native WLED buttons
   (`isButtonPressed`), overriding pixels 256–259 while held.
 - **`addToConfig` / `readFromConfig`** — settings; temperature bands are clamped monotonic
   (cold ≤ cool ≤ warm) on load.

@@ -1,8 +1,8 @@
 {
   "name": "wled-usermod-word-clock-fx-16x16",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "license": "MIT",
-  "description": "16x16 RGBW English word clock as a first-class WLED Effect, with Open-Meteo weather words and weather-driven presets and corner-button LEDs.",
+  "description": "RGBW English word clock as a first-class WLED Effect with selectable layouts (16x16 exact-minute, 11x10 WordClock 2022, custom), Open-Meteo weather words, weather-driven presets and corner-button LEDs.",
   "repository": { "type": "git", "url": "https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git" },
   "authors": [
     { "name": "Austin St. Aubin", "email": "austinsaintaubin@gmail.com", "maintainer": true }

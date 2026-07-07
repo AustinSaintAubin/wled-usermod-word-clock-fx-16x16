@@ -8,10 +8,10 @@
 #endif
 
 /*
- * Word Clock FX - 16x16 RGBW matrix word clock as a WLED Effect (English, exact-minute phrasing).
+ * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.2.1
- * Updated : 2026-06-30
+ * Version : 1.3.0
+ * Updated : 2026-07-07
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
  *
@@ -20,11 +20,15 @@
  * *Effect* ("Word Clock FX"). That means it can be transitioned/crossfaded,
  * colored, palette-mapped and stored per-preset like any other effect.
  *
- * The effect is 2D: configure a 16x16 matrix in WLED's LED preferences (set the
+ * The effect is 2D: configure the matrix in WLED's LED preferences (set the
  * serpentine/rotation there to match the physical wiring). This code works purely
- * in logical X/Y (0..15) and never touches raw LED indices.
- *
- * Grammar (exact minute), e.g. "IT IS TWENTY ONE MINUTES PAST SEVEN IN THE EVENING".
+ * in logical X/Y and never touches raw LED indices. The word layout is selectable
+ * in the usermod settings:
+ *   - 16x16 exact-minute (default), e.g. "IT IS TWENTY ONE MINUTES PAST SEVEN IN THE EVENING"
+ *   - 11x10 "WordClock 2022" (printables.com/model/311949), 5-minute phrasing + AM/PM
+ *   - Custom: /wordclock.json uploaded to the WLED filesystem (see readme)
+ * The layout draws from the segment's top-left; position it with the segment's 2D
+ * bounds. Corner LEDs can optionally count the minutes a 5-minute layout can't show.
  *
  * It also has an integrated Open-Meteo weather client (free, no API key) that:
  *   - feeds the outdoor temperature to the WARM/COOL/HOT/COLD words, and
@@ -32,158 +36,236 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.2.1"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.3.0"   // usermod_word_clock_fx
 
-// A word is a horizontal run of letters: top-left cell (x,y) and length.
-struct WcfxWord { uint8_t x, y, len; };
+// ---- Layouts --------------------------------------------------------------------
+// A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
+// horizontal run of letters (top-left cell x,y + length) tagged with the role it plays
+// in the sentence. The same role may appear more than once (multi-segment words: every
+// entry with the role lights). Roles a layout lacks are silently skipped by the grammar
+// engine — that's what lets one engine drive layouts with or without period-of-day,
+// AM/PM or temperature words.
 
-// ---- Fixed words / connectors -------------------------------------------------
-static const WcfxWord wcIT        = { 0, 0, 2};
-static const WcfxWord wcIS        = { 3, 0, 2};
-static const WcfxWord wcMINUTES   = { 0, 7, 7};
-static const WcfxWord wcQUARTER   = { 8, 7, 7};
-static const WcfxWord wcA         = { 7, 5, 1}; // standalone 'A' (between SIXTEEN/EIGHTEEN) for "A QUARTER"
-static const WcfxWord wcHALF      = { 0, 8, 4};
-static const WcfxWord wcPAST      = { 5, 8, 4};
-static const WcfxWord wcUNTIL     = {10, 8, 5};
-static const WcfxWord wcOCLOCK    = { 1,12, 6};
-static const WcfxWord wcIN        = {10,12, 2};
-static const WcfxWord wcTHE       = {13,12, 3};
-static const WcfxWord wcAT        = { 0,14, 2}; // same row as NIGHT -> "AT NIGHT"
-static const WcfxWord wcMORNING   = { 9,13, 7};
-static const WcfxWord wcAFTERNOON = { 0,13, 9};
-static const WcfxWord wcEVENING   = { 9,14, 7};
-static const WcfxWord wcNIGHT     = { 3,14, 5};
+typedef uint32_t WcfxRow;   // one mask row, one bit per column
+#define WCFX_MAX_W 32
+#define WCFX_MAX_H 32
 
-// ---- Temperature words (bottom row 15): "& WARM COOL HOT COLD" -----------------
-static const WcfxWord wcAmp = { 0,15, 1}; // '&' at LED 240 (row 15, col 0)
-// Index == temperature band (1..4); index 0 = none/unknown.
-static const WcfxWord wcTempWord[5] = {
-  { 0, 0, 0}, // 0 none
-  {12,15, 4}, // 1 COLD
-  { 5,15, 4}, // 2 COOL
-  { 1,15, 4}, // 3 WARM
-  { 9,15, 3}, // 4 HOT
+enum WcfxRole : uint8_t {
+  WR_IT, WR_IS, WR_A, WR_QUARTER, WR_HALF, WR_PAST, WR_TO,   // WR_TO doubles as UNTIL
+  WR_OCLOCK, WR_MINUTES, WR_AM, WR_PM,
+  WR_IN, WR_THE, WR_AT, WR_MORNING, WR_AFTERNOON, WR_EVENING, WR_NIGHT,
+  WR_AMP, WR_COLD, WR_COOL, WR_WARM, WR_HOT,
+  WR_M1,                    // minute numbers: WR_M1 + (n-1) for n = 1..20
+  WR_M20 = WR_M1 + 19,
+  WR_M25,                   // optional dedicated TWENTYFIVE tile (else TWENTY + FIVE)
+  WR_H1,                    // hours: WR_H1 + (h-1) for h = 1..12
+  WR_H12 = WR_H1 + 11,
+  WR_COUNT
 };
 
-// ---- Minute number words (top region, rows 0..8); index == the number ---------
-// Index 0 unused. 21..29 are composed as TWENTY (20) + ones (1..9).
-static const WcfxWord wcMinuteNum[21] = {
-  { 0, 0, 0}, //  0 unused
-  {13, 0, 3}, //  1 ONE
-  { 0, 1, 3}, //  2 TWO
-  { 0, 3, 5}, //  3 THREE
-  {12, 2, 4}, //  4 FOUR
-  { 0, 2, 4}, //  5 FIVE
-  { 0, 5, 3}, //  6 SIX      (inside SIXTEEN)
-  { 0, 6, 5}, //  7 SEVEN    (inside SEVENTEEN)
-  { 8, 5, 5}, //  8 EIGHT    (inside EIGHTEEN)
-  { 6, 3, 4}, //  9 NINE     (inside NINETEEN)
-  { 4, 1, 3}, // 10 TEN
-  { 5, 2, 6}, // 11 ELEVEN
-  {10, 6, 6}, // 12 TWELVE
-  { 8, 1, 8}, // 13 THIRTEEN
-  { 0, 4, 8}, // 14 FOURTEEN
-  { 8, 7, 7}, // 15 QUARTER  (no FIFTEEN tile; handled specially)
-  { 0, 5, 7}, // 16 SIXTEEN
-  { 0, 6, 9}, // 17 SEVENTEEN
-  { 8, 5, 8}, // 18 EIGHTEEN
-  { 6, 3, 8}, // 19 NINETEEN
-  { 6, 0, 6}, // 20 TWENTY
+struct WcfxLayoutWord { uint8_t role, x, y, len; };
+
+enum WcfxGrammar : uint8_t {
+  WCFX_GRAM_EXACT = 0,  // "IT IS TWENTY ONE MINUTES PAST SEVEN" (exact minute)
+  WCFX_GRAM_FIVE  = 1,  // "IT IS TWENTY FIVE PAST SEVEN" (floored to 5-minute steps)
 };
 
-// ---- Hour words (rows 9..11); index == the hour (1..12) -----------------------
-static const WcfxWord wcHour[13] = {
-  { 0, 0, 0}, //  0 unused (00 -> 12)
-  {13,11, 3}, //  1 ONE
-  {11,11, 3}, //  2 TWO
-  { 5, 9, 5}, //  3 THREE
-  { 7,11, 4}, //  4 FOUR
-  { 3,11, 4}, //  5 FIVE
-  { 0,11, 3}, //  6 SIX
-  { 0, 9, 5}, //  7 SEVEN
-  { 0,10, 5}, //  8 EIGHT
-  { 6,10, 4}, //  9 NINE
-  { 4,10, 3}, // 10 TEN  (the "TEN" inside row 10 "EIGHTEN")
-  {10, 9, 6}, // 11 ELEVEN
-  {10,10, 6}, // 12 TWELVE
+struct WcfxLayout {
+  uint8_t width, height, grammar, wordCount;
+  const WcfxLayoutWord *words;   // PROGMEM for the built-in tables, heap for custom
 };
+
+// ---- Built-in layout: 16x16 exact-minute (the original MK2 face) ----------------
+static const WcfxLayoutWord wcWords16[] PROGMEM = {
+  {WR_IT,        0, 0,2}, {WR_IS,        3, 0,2},
+  {WR_MINUTES,   0, 7,7}, {WR_QUARTER,   8, 7,7},
+  {WR_A,         7, 5,1},              // standalone 'A' (between SIXTEEN/EIGHTEEN) for "A QUARTER"
+  {WR_HALF,      0, 8,4}, {WR_PAST,      5, 8,4},
+  {WR_TO,       10, 8,5},              // tile reads "UNTIL"
+  {WR_OCLOCK,    1,12,6},
+  {WR_IN,       10,12,2}, {WR_THE,      13,12,3},
+  {WR_AT,        0,14,2},              // same row as NIGHT -> "AT NIGHT"
+  {WR_MORNING,   9,13,7}, {WR_AFTERNOON, 0,13,9}, {WR_EVENING, 9,14,7}, {WR_NIGHT, 3,14,5},
+  // temperature words (bottom row 15): "& WARM COOL HOT COLD"
+  {WR_AMP,       0,15,1},
+  {WR_COLD,     12,15,4}, {WR_COOL,      5,15,4}, {WR_WARM,    1,15,4}, {WR_HOT,   9,15,3},
+  // minute numbers 1..20 (no FIFTEEN tile: "A QUARTER" is grammar-handled)
+  {WR_M1,      13, 0,3},  // ONE
+  {WR_M1+ 1,    0, 1,3},  // TWO
+  {WR_M1+ 2,    0, 3,5},  // THREE
+  {WR_M1+ 3,   12, 2,4},  // FOUR
+  {WR_M1+ 4,    0, 2,4},  // FIVE
+  {WR_M1+ 5,    0, 5,3},  // SIX      (inside SIXTEEN)
+  {WR_M1+ 6,    0, 6,5},  // SEVEN    (inside SEVENTEEN)
+  {WR_M1+ 7,    8, 5,5},  // EIGHT    (inside EIGHTEEN)
+  {WR_M1+ 8,    6, 3,4},  // NINE     (inside NINETEEN)
+  {WR_M1+ 9,    4, 1,3},  // TEN
+  {WR_M1+10,    5, 2,6},  // ELEVEN
+  {WR_M1+11,   10, 6,6},  // TWELVE
+  {WR_M1+12,    8, 1,8},  // THIRTEEN
+  {WR_M1+13,    0, 4,8},  // FOURTEEN
+  {WR_M1+15,    0, 5,7},  // SIXTEEN
+  {WR_M1+16,    0, 6,9},  // SEVENTEEN
+  {WR_M1+17,    8, 5,8},  // EIGHTEEN
+  {WR_M1+18,    6, 3,8},  // NINETEEN
+  {WR_M20,      6, 0,6},  // TWENTY
+  // hours 1..12 (rows 9..11)
+  {WR_H1,      13,11,3},  // ONE
+  {WR_H1+ 1,   11,11,3},  // TWO
+  {WR_H1+ 2,    5, 9,5},  // THREE
+  {WR_H1+ 3,    7,11,4},  // FOUR
+  {WR_H1+ 4,    3,11,4},  // FIVE
+  {WR_H1+ 5,    0,11,3},  // SIX
+  {WR_H1+ 6,    0, 9,5},  // SEVEN
+  {WR_H1+ 7,    0,10,5},  // EIGHT
+  {WR_H1+ 8,    6,10,4},  // NINE
+  {WR_H1+ 9,    4,10,3},  // TEN  (the "TEN" inside row 10 "EIGHTEN")
+  {WR_H1+10,   10, 9,6},  // ELEVEN
+  {WR_H12,     10,10,6},  // TWELVE
+};
+
+// ---- Built-in layout: 11x10 "WordClock 2022" (printables.com/model/311949) ------
+// 5-minute phrasing with AM/PM; minute FIVE/TEN and hour FIVE/TEN are distinct tiles.
+// TWENTYFIVE lights as TWENTY + FIVE (contiguous on row 2, cols 0..9).
+static const WcfxLayoutWord wcWords11[] PROGMEM = {
+  {WR_IT,      0,0,2}, {WR_IS,     3,0,2}, {WR_AM,     7,0,2}, {WR_PM,     9,0,2},
+  {WR_A,       0,1,1}, {WR_QUARTER,2,1,7},
+  {WR_M20,     0,2,6}, {WR_M1+4,   6,2,4},                     // TWENTY, FIVE (minutes)
+  {WR_HALF,    0,3,4}, {WR_M1+9,   5,3,3}, {WR_TO,     9,3,2}, // HALF, TEN (minutes), TO
+  {WR_PAST,    0,4,4}, {WR_H1+8,   7,4,4},                     // PAST, NINE
+  {WR_H1,      0,5,3}, {WR_H1+5,   3,5,3}, {WR_H1+2,   6,5,5}, // ONE SIX THREE
+  {WR_H1+3,    0,6,4}, {WR_H1+4,   4,6,4}, {WR_H1+1,   8,6,3}, // FOUR FIVE TWO
+  {WR_H1+7,    0,7,5}, {WR_H1+10,  5,7,6},                     // EIGHT ELEVEN
+  {WR_H1+6,    0,8,5}, {WR_H12,    5,8,6},                     // SEVEN TWELVE
+  {WR_H1+9,    0,9,3}, {WR_OCLOCK, 5,9,6},                     // TEN (hours), O'CLOCK
+};
+
+// Layout metadata stays in RAM (a few bytes each); only the word tables are in PROGMEM.
+static const WcfxLayout WCFX_LAYOUT_16X16 =
+  { 16, 16, WCFX_GRAM_EXACT, (uint8_t)(sizeof(wcWords16)/sizeof(wcWords16[0])), wcWords16 };
+static const WcfxLayout WCFX_LAYOUT_11X10 =
+  { 11, 10, WCFX_GRAM_FIVE,  (uint8_t)(sizeof(wcWords11)/sizeof(wcWords11[0])), wcWords11 };
+
+// Fetch one word from a layout table. Built-in tables live in PROGMEM, so members must
+// not be read directly (crashes on ESP8266); memcpy_P also handles the RAM-resident
+// custom table, so all access is uniform.
+static inline WcfxLayoutWord wcfxWordAt(const WcfxLayout &L, uint8_t i) {
+  WcfxLayoutWord w;
+  memcpy_P(&w, &L.words[i], sizeof(w));
+  return w;
+}
 
 // Config/state mirrors maintained by the usermod, read by the (free) effect function.
 static bool    wcfx_showPeriod = true;
-static bool    wcfx_showTemp   = false;   // light a temperature word on the bottom row
+static bool    wcfx_showTemp   = false;   // light a temperature word (if the layout has them)
 static uint8_t wcfx_tempBand   = 0;       // 0 none, 1 COLD, 2 COOL, 3 WARM, 4 HOT
+static const WcfxLayout *wcfx_layout    = &WCFX_LAYOUT_16X16;  // active layout
+static uint8_t           wcfx_layoutGen = 0;  // bumped on layout change -> effect rebuilds
 
-// OR a word's cells into a 16-row bitmask (bit x of row y == cell lit).
-static inline void wcSet(uint16_t *mask, const WcfxWord &w) {
-  if (w.len == 0 || w.y > 15) return;
-  for (uint8_t i = 0; i < w.len && (w.x + i) < 16; i++) {
-    mask[w.y] |= (uint16_t)(1u << (w.x + i));
+// OR one word's cells into the row bitmask (bit x of row y == cell lit).
+static inline void wcSet(WcfxRow *mask, const WcfxLayout &L, const WcfxLayoutWord &w) {
+  if (w.len == 0 || w.y >= L.height || w.y >= WCFX_MAX_H) return;
+  for (uint8_t i = 0; i < w.len && (w.x + i) < L.width && (w.x + i) < WCFX_MAX_W; i++) {
+    mask[w.y] |= (WcfxRow)1u << (w.x + i);
   }
 }
 
-// Light the spoken minute value (1..30) in the top region.
-static void wcSetMinuteValue(uint16_t *mask, int val) {
-  if (val == 15)      { wcSet(mask, wcA); wcSet(mask, wcQUARTER); return; } // "A QUARTER", no MINUTES word
-  else if (val == 30) { wcSet(mask, wcHALF);    return; } // no MINUTES word
+// Light every table entry carrying this role (repeated roles = multi-segment words).
+// Returns whether the layout has the role at all; missing roles are silent no-ops.
+static bool wcfxLightRole(WcfxRow *mask, const WcfxLayout &L, uint8_t role) {
+  bool hit = false;
+  for (uint8_t i = 0; i < L.wordCount; i++) {
+    const WcfxLayoutWord w = wcfxWordAt(L, i);
+    if (w.role == role) { wcSet(mask, L, w); hit = true; }
+  }
+  return hit;
+}
+
+static inline void wcfxLightHour(WcfxRow *mask, const WcfxLayout &L, int h12) {
+  if (h12 >= 1 && h12 <= 12) wcfxLightRole(mask, L, WR_H1 + (h12 - 1));
+}
+
+// Exact-minute grammar: light the spoken minute value (1..30), "<N> MINUTES".
+static void wcfxLightMinutesExact(WcfxRow *mask, const WcfxLayout &L, int val) {
+  if (val == 15) { wcfxLightRole(mask, L, WR_A); wcfxLightRole(mask, L, WR_QUARTER); return; } // "A QUARTER", no MINUTES word
+  if (val == 30) { wcfxLightRole(mask, L, WR_HALF); return; }                                  // no MINUTES word
   if (val <= 20) {
-    wcSet(mask, wcMinuteNum[val]);
+    wcfxLightRole(mask, L, WR_M1 + (val - 1));
   } else { // 21..29 -> TWENTY + ones
-    wcSet(mask, wcMinuteNum[20]);
-    wcSet(mask, wcMinuteNum[val - 20]);
+    wcfxLightRole(mask, L, WR_M20);
+    wcfxLightRole(mask, L, WR_M1 + (val - 21));
   }
-  wcSet(mask, wcMINUTES);
+  wcfxLightRole(mask, L, WR_MINUTES);
 }
 
-static inline void wcSetHour(uint16_t *mask, int h12) {
-  if (h12 < 1 || h12 > 12) return;
-  wcSet(mask, wcHour[h12]);
+// Five-minute grammar: light a value in {5,10,15,20,25,30}.
+static void wcfxLightMinutesFive(WcfxRow *mask, const WcfxLayout &L, int val) {
+  switch (val) {
+    case  5: wcfxLightRole(mask, L, WR_M1 + 4); break;
+    case 10: wcfxLightRole(mask, L, WR_M1 + 9); break;
+    case 15: wcfxLightRole(mask, L, WR_A); wcfxLightRole(mask, L, WR_QUARTER); break;
+    case 20: wcfxLightRole(mask, L, WR_M20); break;
+    case 25: if (!wcfxLightRole(mask, L, WR_M25)) {      // dedicated TWENTYFIVE tile, else
+               wcfxLightRole(mask, L, WR_M20);           // ... TWENTY + FIVE
+               wcfxLightRole(mask, L, WR_M1 + 4);
+             } break;
+    case 30: wcfxLightRole(mask, L, WR_HALF); break;
+  }
 }
 
 // Build the full active-letter bitmap from 24h hour and minute.
-static void wcfxBuildMask(uint16_t *mask, int h24, int m) {
-  for (int y = 0; y < 16; y++) mask[y] = 0;
+static void wcfxBuildMask(WcfxRow *mask, const WcfxLayout &L, int h24, int m) {
+  for (int y = 0; y < WCFX_MAX_H; y++) mask[y] = 0;
 
-  wcSet(mask, wcIT);
-  wcSet(mask, wcIS);
+  wcfxLightRole(mask, L, WR_IT);
+  wcfxLightRole(mask, L, WR_IS);
+
+  // Five-minute layouts floor to the last 5-minute step (10:04 still reads TEN O'CLOCK);
+  // the corner-LED minute dots can show the remainder.
+  const bool five = (L.grammar == WCFX_GRAM_FIVE);
+  const int  mm   = five ? (m / 5) * 5 : m;
 
   int h12;
-  if (m == 0) {
+  if (mm == 0) {
     h12 = h24 % 12; if (h12 == 0) h12 = 12;
-    wcSetHour(mask, h12);
-    wcSet(mask, wcOCLOCK);
-  } else if (m <= 30) {              // ... PAST <this hour>
+    wcfxLightHour(mask, L, h12);
+    wcfxLightRole(mask, L, WR_OCLOCK);
+  } else if (mm <= 30) {             // ... PAST <this hour>
     h12 = h24 % 12; if (h12 == 0) h12 = 12;
-    wcSetMinuteValue(mask, m);
-    wcSet(mask, wcPAST);
-    wcSetHour(mask, h12);
-  } else {                          // ... UNTIL <next hour>
+    if (five) wcfxLightMinutesFive(mask, L, mm);
+    else      wcfxLightMinutesExact(mask, L, mm);
+    wcfxLightRole(mask, L, WR_PAST);
+    wcfxLightHour(mask, L, h12);
+  } else {                           // ... TO/UNTIL <next hour>
     int hn = (h24 + 1) % 24;
     h12 = hn % 12; if (h12 == 0) h12 = 12;
-    wcSetMinuteValue(mask, 60 - m);
-    wcSet(mask, wcUNTIL);
-    wcSetHour(mask, h12);
+    if (five) wcfxLightMinutesFive(mask, L, 60 - mm);
+    else      wcfxLightMinutesExact(mask, L, 60 - mm);
+    wcfxLightRole(mask, L, WR_TO);
+    wcfxLightHour(mask, L, h12);
   }
 
-  if (wcfx_showPeriod) {            // period of day based on real 24h hour
-    if (h24 < 12)                   { wcSet(mask, wcIN); wcSet(mask, wcTHE); wcSet(mask, wcMORNING); }   // 00..11 (after midnight is morning)
-    else if (h24 < 17)              { wcSet(mask, wcIN); wcSet(mask, wcTHE); wcSet(mask, wcAFTERNOON); } // 12..16
-    else if (h24 < 21)              { wcSet(mask, wcIN); wcSet(mask, wcTHE); wcSet(mask, wcEVENING); }   // 17..20
-    else                            { wcSet(mask, wcAT); wcSet(mask, wcNIGHT); }                         // 21..23
+  if (wcfx_showPeriod) {             // period of day based on real 24h hour
+    if (h24 < 12)      { wcfxLightRole(mask, L, WR_IN); wcfxLightRole(mask, L, WR_THE); wcfxLightRole(mask, L, WR_MORNING); }   // 00..11 (after midnight is morning)
+    else if (h24 < 17) { wcfxLightRole(mask, L, WR_IN); wcfxLightRole(mask, L, WR_THE); wcfxLightRole(mask, L, WR_AFTERNOON); } // 12..16
+    else if (h24 < 21) { wcfxLightRole(mask, L, WR_IN); wcfxLightRole(mask, L, WR_THE); wcfxLightRole(mask, L, WR_EVENING); }   // 17..20
+    else               { wcfxLightRole(mask, L, WR_AT); wcfxLightRole(mask, L, WR_NIGHT); }                                     // 21..23
+    wcfxLightRole(mask, L, (h24 < 12) ? WR_AM : WR_PM);  // layouts with AM/PM tiles instead
   }
 
   if (wcfx_showTemp && wcfx_tempBand >= 1 && wcfx_tempBand <= 4) {
-    wcSet(mask, wcAmp);                      // '&' lights whenever a temperature word shows
-    wcSet(mask, wcTempWord[wcfx_tempBand]);  // WARM/COOL/HOT/COLD on the bottom row
+    wcfxLightRole(mask, L, WR_AMP);                          // '&' lights whenever a temperature word shows
+    wcfxLightRole(mask, L, WR_COLD + (wcfx_tempBand - 1));   // COLD/COOL/WARM/HOT
   }
 }
 
 // Per-segment render state (kept in SEGENV.data so the effect is safe on 2+ segments).
 struct WCFXRt {
-  uint16_t cur[16];
-  uint16_t prev[16];
+  WcfxRow  cur[WCFX_MAX_H];
+  WcfxRow  prev[WCFX_MAX_H];
   uint32_t transStart;
   uint8_t  lastBand;
+  uint8_t  lastGen;
 };
 
 // ---- The effect ---------------------------------------------------------------
@@ -193,6 +275,7 @@ void mode_word_clock_fx(void) {
   if (!SEGENV.allocateData(sizeof(WCFXRt))) { SEGMENT.fill(SEGCOLOR(0)); return; }
   WCFXRt &rt = *reinterpret_cast<WCFXRt *>(SEGENV.data); // zero-initialised on allocation
 
+  const WcfxLayout &L = *wcfx_layout;
   const int cols = SEG_W;
   const int rows = SEG_H;
 
@@ -203,12 +286,13 @@ void mode_word_clock_fx(void) {
   // previous map and crossfade to the new one over the segment's transition time, so
   // minute-to-minute changes fade in/out like a normal effect transition.
   const uint16_t stamp = (uint16_t)(h24 * 60 + m);
-  if (SEGENV.call == 0 || SEGENV.aux0 != stamp || rt.lastBand != wcfx_tempBand) {
-    for (int y = 0; y < 16; y++) rt.prev[y] = (SEGENV.call == 0) ? 0 : rt.cur[y];
-    wcfxBuildMask(rt.cur, h24, m);
+  if (SEGENV.call == 0 || SEGENV.aux0 != stamp || rt.lastBand != wcfx_tempBand || rt.lastGen != wcfx_layoutGen) {
+    for (int y = 0; y < WCFX_MAX_H; y++) rt.prev[y] = (SEGENV.call == 0) ? 0 : rt.cur[y];
+    wcfxBuildMask(rt.cur, L, h24, m);
     rt.transStart = strip.now;
     SEGENV.aux0 = stamp;
     rt.lastBand = wcfx_tempBand;
+    rt.lastGen  = wcfx_layoutGen;
   }
 
   // Crossfade progress 0..255 driven by the segment/global transition setting.
@@ -223,12 +307,13 @@ void mode_word_clock_fx(void) {
   const uint8_t bg = SEGMENT.intensity;            // "Background" dim level (0 = off)
   const int span = (cols * rows) > 0 ? (cols * rows) : 1;
 
+  // The layout draws from the segment's top-left; frame it with the segment's 2D bounds.
   for (int y = 0; y < rows; y++) {
-    const uint16_t curRow  = (y < 16) ? rt.cur[y]  : 0;
-    const uint16_t prevRow = (y < 16) ? rt.prev[y] : 0;
+    const WcfxRow curRow  = (y < WCFX_MAX_H) ? rt.cur[y]  : 0;
+    const WcfxRow prevRow = (y < WCFX_MAX_H) ? rt.prev[y] : 0;
     for (int x = 0; x < cols; x++) {
-      const bool nowOn = (x < 16) && (curRow  & (uint16_t)(1u << x));
-      const bool wasOn = (x < 16) && (prevRow & (uint16_t)(1u << x));
+      const bool nowOn = (x < WCFX_MAX_W) && (curRow  & ((WcfxRow)1u << x));
+      const bool wasOn = (x < WCFX_MAX_W) && (prevRow & ((WcfxRow)1u << x));
       uint32_t base = usePalette
         ? SEGMENT.color_from_palette((uint16_t)((x + y * cols) * 255 / span), true, false, 0)
         : SEGCOLOR(0);
@@ -257,6 +342,13 @@ class WordClockFxUsermod : public Usermod {
     bool enabled    = true;
     bool showPeriod = true;
     bool everConnected = false;   // first WiFi connect after boot has happened
+
+    // Layout selection: 0 = 16x16 exact-minute, 1 = 11x10 WordClock 2022, 2 = custom file.
+    uint8_t         layoutSel    = 0;
+    WcfxLayout      customLayout = { 0, 0, 0, 0, nullptr };
+    WcfxLayoutWord *customWords  = nullptr;   // heap table backing customLayout
+    String          layoutStatus;             // custom-file parse result (shown on the Info page)
+    uint8_t         wcfxEffectId = 255;       // effect id from strip.addEffect (gates minute dots)
 
     // Temperature words. All thresholds/values are in °C (band selection compares °C);
     // tempFahrenheit only changes the Info-page display unit.
@@ -313,6 +405,8 @@ class WordClockFxUsermod : public Usermod {
     bool     cornerLeds = false;
     String   cornerColorHex = "FFFFFF";           // RRGGBB or RRGGBBWW
     uint32_t cornerColor = 0xFFFFFFUL;            // parsed from cornerColorHex
+    // Minute dots: corner LEDs count minute % 5 — the minutes a 5-minute layout can't say.
+    bool     minuteDots = false;
     // Corner order: Top-Left, Top-Right, Bottom-Left, Bottom-Right (matches readme wiring).
     int8_t   cbBtn[4] = { 1, 2, 3, 4 };           // WLED button index per corner (-1 = off)
     int16_t  cbLed[4] = { 257, 259, 256, 258 };   // LED pixel index per corner (-1 = off)
@@ -322,6 +416,8 @@ class WordClockFxUsermod : public Usermod {
     static const char _name[];
     static const char _enabled[];
     static const char _showPeriod[];
+    static const char _layout[];
+    static const char _minuteDots[];
     static const char _showTemp[];
     static const char _fahrenheit[];
     static const char _thrColdCool[];
@@ -477,6 +573,101 @@ class WordClockFxUsermod : public Usermod {
       return RGBW32((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, 0);
     }
 
+    // Map a role token from /wordclock.json to a WcfxRole; -1 if unknown.
+    // Fixed names are in WcfxRole enum order; "until" aliases "to"; mN/hN are numeric.
+    static int roleFromToken(const char *t) {
+      static const char* const names[] = {
+        "it","is","a","quarter","half","past","to","oclock","minutes","am","pm",
+        "in","the","at","morning","afternoon","evening","night",
+        "amp","cold","cool","warm","hot"
+      };
+      for (unsigned i = 0; i < sizeof(names)/sizeof(names[0]); i++)
+        if (!strcmp(t, names[i])) return (int)i;
+      if (!strcmp(t, "until")) return WR_TO;
+      if ((t[0] == 'm' || t[0] == 'h') && t[1] >= '0' && t[1] <= '9') {
+        const int n = atoi(t + 1);
+        if (t[0] == 'm') {
+          if (n >= 1 && n <= 20) return WR_M1 + (n - 1);
+          if (n == 25)           return WR_M25;
+        } else if (n >= 1 && n <= 12) return WR_H1 + (n - 1);
+      }
+      return -1;
+    }
+
+    // Parse /wordclock.json (uploaded via WLED's /edit page) into customLayout.
+    // On any failure the active layout falls back to the built-in 16x16 and
+    // layoutStatus carries the error for the Info page. wcfx_layout is repointed
+    // to a safe layout BEFORE the old word table is freed — never dangling.
+    bool loadCustomLayout() {
+      wcfx_layout = &WCFX_LAYOUT_16X16;
+      customLayout.wordCount = 0;
+      delete[] customWords; customWords = nullptr;
+
+      File f = WLED_FS.open("/wordclock.json", "r");
+      if (!f) { layoutStatus = F("error: /wordclock.json not found (upload via /edit)"); return false; }
+      DynamicJsonDocument doc(4096);   // our own arena; never WLED's pinned doc
+      const DeserializationError err = deserializeJson(doc, f);
+      f.close();
+      if (err) { layoutStatus = String(F("error: ")) + err.c_str(); return false; }
+
+      const int w = doc["w"] | 0, h = doc["h"] | 0;
+      const char *gs = doc["grammar"] | "five";
+      uint8_t grammar;
+      if      (strcmp(gs, "five")  == 0) grammar = WCFX_GRAM_FIVE;
+      else if (strcmp(gs, "exact") == 0) grammar = WCFX_GRAM_EXACT;
+      else { layoutStatus = F("error: grammar must be 'five' or 'exact'"); return false; }
+      if (w < 1 || w > WCFX_MAX_W || h < 1 || h > WCFX_MAX_H) {
+        layoutStatus = String(F("error: w/h out of range (1..")) + WCFX_MAX_W + ')';
+        return false;
+      }
+      JsonArray words = doc["words"];
+      if (words.isNull() || words.size() < 1 || words.size() > 96) {
+        layoutStatus = F("error: 'words' must be an array of 1..96 entries");
+        return false;
+      }
+
+      WcfxLayoutWord *tbl = new (std::nothrow) WcfxLayoutWord[words.size()];
+      if (!tbl) { layoutStatus = F("error: out of memory"); return false; }
+      uint8_t n = 0;
+      for (JsonVariant v : words) {
+        JsonArray e = v.as<JsonArray>();
+        const char *tok = e[0] | (const char*)nullptr;
+        const int role = tok ? roleFromToken(tok) : -1;
+        const int x = e[1] | -1, y = e[2] | -1, len = e[3] | -1;
+        if (role < 0 || x < 0 || y < 0 || len < 1 || x + len > w || y >= h) {
+          layoutStatus = String(F("error: word ")) + n + F(" ('") + (tok ? tok : "?") + F("') invalid");
+          delete[] tbl;
+          return false;
+        }
+        tbl[n++] = { (uint8_t)role, (uint8_t)x, (uint8_t)y, (uint8_t)len };
+      }
+      customWords  = tbl;
+      customLayout = { (uint8_t)w, (uint8_t)h, grammar, n, customWords };
+      wcfx_layout  = &customLayout;
+      layoutStatus = String(F("ok: ")) + n + F(" words, ") + w + 'x' + h + ' ' + gs;
+      return true;
+    }
+
+    // Point wcfx_layout at the selected layout (called from setup() and readFromConfig()).
+    void applyLayout() {
+      if (layoutSel == 2) {
+        loadCustomLayout();               // falls back to the 16x16 internally on error
+      } else {
+        wcfx_layout  = (layoutSel == 1) ? &WCFX_LAYOUT_11X10 : &WCFX_LAYOUT_16X16;
+        layoutStatus = "";
+      }
+      wcfx_layoutGen++;                   // effect rebuilds (crossfades) on next frame
+    }
+
+    // True when any active segment is running the Word Clock FX effect.
+    bool effectActive() const {
+      for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
+        const Segment &s = strip.getSegment(i);
+        if (s.isActive() && s.mode == wcfxEffectId) return true;
+      }
+      return false;
+    }
+
     void applyStatePreset() {
       if (!weatherPresets || wxState == WX_UNKNOWN || wxState == lastApplied) return;
       const uint8_t p = preset[wxState];
@@ -540,10 +731,11 @@ class WordClockFxUsermod : public Usermod {
   public:
     void setup() override {
       if (enabled) {
-        strip.addEffect(255, &mode_word_clock_fx, _data_FX_mode_word_clock_fx);
+        wcfxEffectId = strip.addEffect(255, &mode_word_clock_fx, _data_FX_mode_word_clock_fx);
       }
       wcfx_showPeriod = showPeriod;
       wcfx_showTemp   = showTemp;
+      applyLayout();   // idempotent; readFromConfig already ran (FS is mounted before both)
     #ifdef WCFX_DEFAULT_TRANSITION_MS
       // Override the boot transition (runs after cfg load), set via build flag in the
       // platformio override, e.g. -D WCFX_DEFAULT_TRANSITION_MS=1800 for 1.8 s.
@@ -603,6 +795,16 @@ class WordClockFxUsermod : public Usermod {
     // effects, just before show(), so it overrides the corner segment's normal output.
     void handleOverlayDraw() override {
       const uint16_t total = strip.getLengthTotal();
+      // Minute dots: corners count minute % 5 (the remainder a 5-minute layout can't
+      // say), filling in cbLed[] order. Drawn before the button feedback so a held
+      // button still overrides its corner.
+      if (minuteDots && enabled && effectActive()) {
+        const int dots = minute(localTime) % 5;
+        for (int i = 0; i < dots && i < 4; i++) {
+          if (cbLed[i] < 0 || cbLed[i] >= (int)total) continue;
+          strip.setPixelColor((uint16_t)cbLed[i], cornerColor);
+        }
+      }
       if (cornerLeds) {
         for (int i = 0; i < 4; i++) {
           if (cbBtn[i] < 0 || cbLed[i] < 0 || cbLed[i] >= (int)total) continue;
@@ -626,12 +828,18 @@ class WordClockFxUsermod : public Usermod {
       int n;
       if (getJsonValue(top[F("wxtest")], n) && n >= 1 && n < WX_COUNT) pendingTest = (uint8_t)n;
       if (getJsonValue(top[F("ledtest")], n) && n >= 0) { testLed = n; testLedUntil = millis() + 3000; }
+      if (top[F("reloadLayout")].as<bool>()) applyLayout();   // re-read /wordclock.json without reboot
     }
 
     void addToJsonInfo(JsonObject &root) override {
       JsonObject user = root[F("u")];
       if (user.isNull()) user = root.createNestedObject(F("u"));
       user.createNestedArray(F("Word Clock FX")).add(F("v" WCFX_VERSION));
+
+      JsonArray aLay = user.createNestedArray(F("Word Clock layout"));
+      if (layoutSel == 2)      aLay.add(layoutStatus.length() ? layoutStatus : String(F("custom")));
+      else if (layoutSel == 1) aLay.add(F("11x10 WordClock 2022"));
+      else                     aLay.add(F("16x16 exact-minute"));
 
       const bool wx = fetchWeather || everOk;   // also show once a manual fetch has succeeded
       if (!showTemp && !wx) return;
@@ -701,8 +909,10 @@ class WordClockFxUsermod : public Usermod {
       // Weather->Presets, Temperature words.
       top[FPSTR(_enabled)]     = enabled;
       top[FPSTR(_showPeriod)]  = showPeriod;
+      top[FPSTR(_layout)]      = layoutSel;
       top[F("cornerLeds")]     = cornerLeds;
       top[F("cornerColor")]    = cornerColorHex;
+      top[FPSTR(_minuteDots)]  = minuteDots;
       top[F("cbBtn0")] = cbBtn[0]; top[F("cbLed0")] = cbLed[0];
       top[F("cbBtn1")] = cbBtn[1]; top[F("cbLed1")] = cbLed[1];
       top[F("cbBtn2")] = cbBtn[2]; top[F("cbLed2")] = cbLed[2];
@@ -741,6 +951,7 @@ class WordClockFxUsermod : public Usermod {
       bool configComplete = !top.isNull();
       configComplete &= getJsonValue(top[FPSTR(_enabled)],     enabled);
       configComplete &= getJsonValue(top[FPSTR(_showPeriod)],  showPeriod);
+      configComplete &= getJsonValue(top[FPSTR(_layout)],      layoutSel, 0);  // absent -> 16x16, no regression
       configComplete &= getJsonValue(top[FPSTR(_showTemp)],    showTemp);
       configComplete &= getJsonValue(top[FPSTR(_fahrenheit)],  tempFahrenheit);
       configComplete &= getJsonValue(top[FPSTR(_thrColdCool)], thrColdCool);
@@ -771,6 +982,7 @@ class WordClockFxUsermod : public Usermod {
       configComplete &= getJsonValue(top[FPSTR(_pSevere)],     preset[WX_SEVERE]);
       configComplete &= getJsonValue(top[F("cornerLeds")],     cornerLeds);
       configComplete &= getJsonValue(top[F("cornerColor")],    cornerColorHex);
+      configComplete &= getJsonValue(top[FPSTR(_minuteDots)],  minuteDots, false);
       configComplete &= getJsonValue(top[F("cbBtn0")], cbBtn[0]); configComplete &= getJsonValue(top[F("cbLed0")], cbLed[0]);
       configComplete &= getJsonValue(top[F("cbBtn1")], cbBtn[1]); configComplete &= getJsonValue(top[F("cbLed1")], cbLed[1]);
       configComplete &= getJsonValue(top[F("cbBtn2")], cbBtn[2]); configComplete &= getJsonValue(top[F("cbLed2")], cbLed[2]);
@@ -783,6 +995,8 @@ class WordClockFxUsermod : public Usermod {
       if (thrWarmHot  < thrCoolWarm) thrWarmHot  = thrCoolWarm;
       wcfx_showPeriod = showPeriod;
       wcfx_showTemp   = showTemp;
+      if (layoutSel > 2) layoutSel = 0;
+      applyLayout();
       return configComplete;
     }
 
@@ -835,11 +1049,18 @@ class WordClockFxUsermod : public Usermod {
                 "wcfxsec('weatherPresets','Weather \\u2192 Presets');"));
       // Labels for the non-tabled fields (tabled fields are labelled by their table rows).
       oappend(F("wcfxlbl('enabled','Enabled');wcfxlbl('showPeriodOfDay','Period of day');"
+                "wcfxlbl('layout','Layout');"
                 "wcfxlbl('fetchWeather','Fetch weather');wcfxlbl('fetchMinutes','Every (min)');"
                 "wcfxlbl('weatherPresets','Enable presets');wcfxlbl('heatAbove','Heat above (\\u00B0C)');"
                 "wcfxlbl('windAbove','Wind gust above (km/h)');"
-                "wcfxlbl('cornerLeds','Light LED on press');wcfxlbl('cornerColor','LED color');"));
+                "wcfxlbl('cornerLeds','Light LED on press');wcfxlbl('cornerColor','LED color');"
+                "wcfxlbl('minuteDots','Minute dots');"));
       oappend(F("wcfxsec('cornerLeds','Corner buttons');"));
+      // Layout dropdown (replaces the numeric input in place; values match layoutSel).
+      oappend(F("(function(){var dd=addDropdown('WordClockFx','layout');if(!dd)return;"
+                "addOption(dd,'16x16 exact-minute',0);"
+                "addOption(dd,'11x10 WordClock 2022',1);"
+                "addOption(dd,'Custom (/wordclock.json)',2);})();"));
       // ---- tables -------------------------------------------------------------
       oappend(F("wcfxtbl(['Setting','Value'],[['Show temperature words',['showTemperature']],"
                 "['Use \\u00B0F (display only)',['fahrenheit']],['Cold below (\\u00B0C)',['coldBelow']],"
@@ -861,8 +1082,10 @@ class WordClockFxUsermod : public Usermod {
       oappend(F("addInfo('WordClockFx:useWledLocation', 1, \"<i class='wcfxi'>else use Place / lat-lon</i>\");"));
       oappend(F("addInfo('WordClockFx:place', 1, \"<i class='wcfxi'>city or ZIP</i>\");"));
       oappend(F("addInfo('WordClockFx:longitude', 1, \"<i class='wcfxi'><a href='https://www.latlong.net' target='_blank'>find lat/lon</a></i>\");"));
+      oappend(F("addInfo('WordClockFx:layout', 1, \"<i class='wcfxi'>custom: upload /wordclock.json via /edit; position with the segment's 2D bounds</i>\");"));
       oappend(F("addInfo('WordClockFx:cornerLeds', 1, \"<i class='wcfxi'>native WLED buttons; lights mapped LED while held</i>\");"));
       oappend(F("addInfo('WordClockFx:cornerColor', 1, \"<i class='wcfxi'>hex RGB or RGBW</i>\");"));
+      oappend(F("addInfo('WordClockFx:minuteDots', 1, \"<i class='wcfxi'>corner LEDs count the minutes a 5-minute layout can't show (minute % 5)</i>\");"));
 
       // ---- live status panel + "Update now" -----------------------------------
       oappend(F("addInfo('WordClockFx:fetchWeather', 1, \"<div id='wcfxstat'>loading current weather...</div>"
@@ -905,6 +1128,8 @@ class WordClockFxUsermod : public Usermod {
 const char WordClockFxUsermod::_name[]        PROGMEM = "WordClockFx";
 const char WordClockFxUsermod::_enabled[]     PROGMEM = "enabled";
 const char WordClockFxUsermod::_showPeriod[]  PROGMEM = "showPeriodOfDay";
+const char WordClockFxUsermod::_layout[]      PROGMEM = "layout";
+const char WordClockFxUsermod::_minuteDots[]  PROGMEM = "minuteDots";
 const char WordClockFxUsermod::_showTemp[]    PROGMEM = "showTemperature";
 const char WordClockFxUsermod::_fahrenheit[]  PROGMEM = "fahrenheit";
 const char WordClockFxUsermod::_thrColdCool[] PROGMEM = "coldBelow";
