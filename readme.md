@@ -130,12 +130,12 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
 
-A ready-to-copy [`platformio_override.sample.ini`](platformio_override.sample.ini) is included
+A ready-to-copy [`examples/platformio_override.sample.ini`](examples/platformio_override.sample.ini) is included
 (the git-URL `custom_usermods` line, size-trim flags, optional OLED, the
 `WCFX_DEFAULT_TRANSITION_MS` example, NTP/timezone, and an OTA upload env) — copy it to the WLED
 repo root as `platformio_override.ini` and adjust.
 
-An example preset set [`wled_presets.example.json`](wled_presets.example.json) is also included
+An example preset set [`examples/wled_presets.example.json`](examples/wled_presets.example.json) is also included
 (a "Wordclock" preset plus the per-weather presets the table maps to) — import it via WLED's
 **Presets → Backup/Restore** to get a working starting point.
 
