@@ -112,5 +112,7 @@ are checkpoints. For each user-visible batch:
 3. Build-verify (loop above), commit with a
    `Co-Authored-By: Claude <model> <noreply@anthropic.com>` trailer, push `main`.
 4. `gh release create vX.Y.Z --title vX.Y.Z --notes "…"` (gh is authed as AustinSaintAubin).
+5. Mirror to the NAS backup (passwordless ssh, remote already configured):
+   `git push nas main --tags`.
 
-Docs-only changes (like this file): commit + push, no version bump.
+Docs-only changes (like this file): commit + push (GitHub **and** nas), no version bump.
