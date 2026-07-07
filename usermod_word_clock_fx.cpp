@@ -10,7 +10,7 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.4.1
+ * Version : 1.4.2
  * Updated : 2026-07-07
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
@@ -37,7 +37,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.4.1"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.4.2"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -55,7 +55,7 @@ enum WcfxRole : uint8_t {
   WR_IT, WR_IS, WR_A, WR_QUARTER, WR_HALF, WR_PAST, WR_TO,   // WR_TO doubles as UNTIL
   WR_OCLOCK, WR_MINUTES, WR_AM, WR_PM,
   WR_IN, WR_THE, WR_AT, WR_MORNING, WR_AFTERNOON, WR_EVENING, WR_NIGHT,
-  WR_AMP, WR_COLD, WR_COOL, WR_WARM, WR_HOT,
+  WR_AND, WR_COLD, WR_COOL, WR_WARM, WR_HOT,   // WR_AND = the '&' tile before a temp word
   WR_M1,                    // minute numbers: WR_M1 + (n-1) for n = 1..20
   WR_M20 = WR_M1 + 19,
   WR_M25,                   // optional dedicated TWENTYFIVE tile (else TWENTY + FIVE)
@@ -83,37 +83,80 @@ struct WcfxLayout {
 // invalid. Schema: {"name","link","w","h","grammar","words":[[role,x,y,len],...]}.
 
 // 16x16 exact-minute (the original MK2 face). The TO tile reads "UNTIL" (alias role);
-// no m15: "A QUARTER" is grammar-handled.
-static const char WCFX_JSON_16X16[] PROGMEM = R"({"name":"16x16 Exact Minute",)"
-  R"("link":"https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16",)"
-  R"("w":16,"h":16,"grammar":"exact","words":[)"
-  R"(["it",0,0,2],["is",3,0,2],["minutes",0,7,7],["quarter",8,7,7],["a",7,5,1],)"
-  R"(["half",0,8,4],["past",5,8,4],["until",10,8,5],["oclock",1,12,6],)"
-  R"(["in",10,12,2],["the",13,12,3],["at",0,14,2],)"
-  R"(["morning",9,13,7],["afternoon",0,13,9],["evening",9,14,7],["night",3,14,5],)"
-  R"(["amp",0,15,1],["cold",12,15,4],["cool",5,15,4],["warm",1,15,4],["hot",9,15,3],)"
-  R"(["m1",13,0,3],["m2",0,1,3],["m3",0,3,5],["m4",12,2,4],["m5",0,2,4],)"
-  R"(["m6",0,5,3],["m7",0,6,5],["m8",8,5,5],["m9",6,3,4],["m10",4,1,3],)"
-  R"(["m11",5,2,6],["m12",10,6,6],["m13",8,1,8],["m14",0,4,8],)"
-  R"(["m16",0,5,7],["m17",0,6,9],["m18",8,5,8],["m19",6,3,8],["m20",6,0,6],)"
-  R"(["h1",13,11,3],["h2",11,11,3],["h3",5,9,5],["h4",7,11,4],["h5",3,11,4],["h6",0,11,3],)"
-  R"(["h7",0,9,5],["h8",0,10,5],["h9",6,10,4],["h10",4,10,3],["h11",10,9,6],["h12",10,10,6]]})";
+// no m15: "A QUARTER" is grammar-handled. The raw string spans lines on purpose — its
+// newlines/indentation are part of the seeded file, keeping it human-readable in /edit;
+// word entries are grouped connectors / period / temperature / minutes / hours.
+static const char WCFX_JSON_16X16[] PROGMEM = R"({
+  "name": "16x16 Exact Minute",
+  "link": "https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16",
+  "width": 16, "height": 16, "grammar": "exact",
+  "letters": [
+    "ITKISSTWENTYTONE",
+    "TWOWTENJTHIRTEEN",
+    "FIVEMELEVENBFOUR",
+    "THREEPNINETEENSU",
+    "FOURTEENMIDNIGHT",
+    "SIXTEENAEIGHTEEN",
+    "SEVENTEENYTWELVE",
+    "MINUTESDQUARTERB",
+    "HALFJPASTQUNTILL",
+    "SEVENTHREEELEVEN",
+    "EIGHTENINETWELVE",
+    "SIXFIVEFOURTWONE",
+    "ZOCLOCKJATINXTHE",
+    "AFTERNOONMORNING",
+    "ATKNIGHTZEVENING",
+    "&WARMCOOLHOTCOLD"
+  ],
+  "words": [
+    ["it",0,0,2],      ["is",3,0,2],
+    ["minutes",0,7,7], ["quarter",8,7,7],   ["a",7,5,1],
+    ["half",0,8,4],    ["past",5,8,4],      ["until",10,8,5],  ["oclock",1,12,6],
+    ["in",10,12,2],    ["the",13,12,3],     ["at",0,14,2],
+    ["morning",9,13,7],["afternoon",0,13,9],["evening",9,14,7],["night",3,14,5],
+    ["and",0,15,1],    ["cold",12,15,4],    ["cool",5,15,4],   ["warm",1,15,4],  ["hot",9,15,3],
+    ["m1",13,0,3],     ["m2",0,1,3],        ["m3",0,3,5],      ["m4",12,2,4],    ["m5",0,2,4],
+    ["m6",0,5,3],      ["m7",0,6,5],        ["m8",8,5,5],      ["m9",6,3,4],     ["m10",4,1,3],
+    ["m11",5,2,6],     ["m12",10,6,6],      ["m13",8,1,8],     ["m14",0,4,8],
+    ["m16",0,5,7],     ["m17",0,6,9],       ["m18",8,5,8],     ["m19",6,3,8],    ["m20",6,0,6],
+    ["h1",13,11,3],    ["h2",11,11,3],      ["h3",5,9,5],      ["h4",7,11,4],    ["h5",3,11,4],
+    ["h6",0,11,3],     ["h7",0,9,5],        ["h8",0,10,5],     ["h9",6,10,4],    ["h10",4,10,3],
+    ["h11",10,9,6],    ["h12",10,10,6]
+  ]
+})";
 
 // 11x10 "WordClock 2022" — 5-minute phrasing with AM/PM; minute FIVE/TEN and hour
 // FIVE/TEN are distinct tiles; TWENTYFIVE lights as TWENTY + FIVE (contiguous row 2).
-static const char WCFX_JSON_11X10[] PROGMEM = R"({"name":"11x10 WordClock 2022",)"
-  R"("link":"https://www.printables.com/model/311949-wordclock-2022",)"
-  R"("w":11,"h":10,"grammar":"five","words":[)"
-  R"(["it",0,0,2],["is",3,0,2],["am",7,0,2],["pm",9,0,2],)"
-  R"(["a",0,1,1],["quarter",2,1,7],)"
-  R"(["m20",0,2,6],["m5",6,2,4],)"
-  R"(["half",0,3,4],["m10",5,3,3],["to",9,3,2],)"
-  R"(["past",0,4,4],["h9",7,4,4],)"
-  R"(["h1",0,5,3],["h6",3,5,3],["h3",6,5,5],)"
-  R"(["h4",0,6,4],["h5",4,6,4],["h2",8,6,3],)"
-  R"(["h8",0,7,5],["h11",5,7,6],)"
-  R"(["h7",0,8,5],["h12",5,8,6],)"
-  R"(["h10",0,9,3],["oclock",5,9,6]]})";
+// Word entries are grouped one line per physical grid row.
+static const char WCFX_JSON_11X10[] PROGMEM = R"({
+  "name": "11x10 WordClock 2022",
+  "link": "https://www.printables.com/model/311949-wordclock-2022",
+  "width": 11, "height": 10, "grammar": "five",
+  "letters": [
+    "ITLISASAMPM",
+    "ACQUARTERDC",
+    "TWENTYFIVEX",
+    "HALFSTENFTO",
+    "PASTERUNINE",
+    "ONESIXTHREE",
+    "FOURFIVETWO",
+    "EIGHTELEVEN",
+    "SEVENTWELVE",
+    "TENSEOCLOCK"
+  ],
+  "words": [
+    ["it",0,0,2],   ["is",3,0,2],   ["am",7,0,2], ["pm",9,0,2],
+    ["a",0,1,1],    ["quarter",2,1,7],
+    ["m20",0,2,6],  ["m5",6,2,4],
+    ["half",0,3,4], ["m10",5,3,3],  ["to",9,3,2],
+    ["past",0,4,4], ["h9",7,4,4],
+    ["h1",0,5,3],   ["h6",3,5,3],   ["h3",6,5,5],
+    ["h4",0,6,4],   ["h5",4,6,4],   ["h2",8,6,3],
+    ["h8",0,7,5],   ["h11",5,7,6],
+    ["h7",0,8,5],   ["h12",5,8,6],
+    ["h10",0,9,3],  ["oclock",5,9,6]
+  ]
+})";
 
 static const char WCFX_FILE_16X16[] = "/wcfx-16x16.json";
 static const char WCFX_FILE_11X10[] = "/wcfx-11x10.json";
@@ -226,7 +269,7 @@ static void wcfxBuildMask(WcfxRow *mask, const WcfxLayout &L, int h24, int m) {
   }
 
   if (wcfx_showTemp && wcfx_tempBand >= 1 && wcfx_tempBand <= 4) {
-    wcfxLightRole(mask, L, WR_AMP);                          // '&' lights whenever a temperature word shows
+    wcfxLightRole(mask, L, WR_AND);                          // '&' lights whenever a temperature word shows
     wcfxLightRole(mask, L, WR_COLD + (wcfx_tempBand - 1));   // COLD/COOL/WARM/HOT
   }
 }
@@ -553,11 +596,12 @@ class WordClockFxUsermod : public Usermod {
       static const char* const names[] = {
         "it","is","a","quarter","half","past","to","oclock","minutes","am","pm",
         "in","the","at","morning","afternoon","evening","night",
-        "amp","cold","cool","warm","hot"
+        "and","cold","cool","warm","hot"
       };
       for (unsigned i = 0; i < sizeof(names)/sizeof(names[0]); i++)
         if (!strcmp(t, names[i])) return (int)i;
       if (!strcmp(t, "until")) return WR_TO;
+      if (!strcmp(t, "amp"))   return WR_AND;   // legacy token for the '&' tile
       if ((t[0] == 'm' || t[0] == 'h') && t[1] >= '0' && t[1] <= '9') {
         const int n = atoi(t + 1);
         if (t[0] == 'm') {
@@ -593,14 +637,15 @@ class WordClockFxUsermod : public Usermod {
     // in the async_tcp task while the effect renders from loop). On failure the currently
     // active layout is left untouched and layoutStatus carries the error.
     bool parseLayoutDoc(JsonDocument &doc, const char *src) {
-      const int w = doc["w"] | 0, h = doc["h"] | 0;
+      const int w = doc["width"]  | (doc["w"] | 0);   // short keys accepted for compat
+      const int h = doc["height"] | (doc["h"] | 0);
       const char *gs = doc["grammar"] | "five";
       uint8_t grammar;
       if      (strcmp(gs, "five")  == 0) grammar = WCFX_GRAM_FIVE;
       else if (strcmp(gs, "exact") == 0) grammar = WCFX_GRAM_EXACT;
       else { layoutStatus = F("error: grammar must be 'five' or 'exact'"); return false; }
       if (w < 1 || w > WCFX_MAX_W || h < 1 || h > WCFX_MAX_H) {
-        layoutStatus = String(F("error: w/h out of range (1..")) + WCFX_MAX_W + ')';
+        layoutStatus = String(F("error: width/height out of range (1..")) + WCFX_MAX_W + ')';
         return false;
       }
       JsonArray words = doc["words"];
@@ -636,13 +681,22 @@ class WordClockFxUsermod : public Usermod {
       return true;
     }
 
+    // Only the fields the firmware needs enter the parse pool — extra/documentation
+    // fields like "letters" (used by the settings-page grid preview, fetched client-side)
+    // are filtered out so they never cost device RAM.
+    static void fillLayoutFilter(JsonDocument &f) {
+      f["name"] = true; f["link"] = true; f["grammar"] = true; f["words"] = true;
+      f["width"] = true; f["height"] = true; f["w"] = true; f["h"] = true;
+    }
+
     // Load a layout from a filesystem file (uploaded via WLED's /edit page).
     // The doc is our own arena, never WLED's pinned doc; 8k — the 16x16 file needs >4k.
     bool loadLayoutFile(const char *path) {
       File f = WLED_FS.open(path, "r");
       if (!f) { layoutStatus = String(F("error: ")) + path + F(" not found"); return false; }
+      StaticJsonDocument<192> filter; fillLayoutFilter(filter);
       DynamicJsonDocument doc(8192);
-      const DeserializationError err = deserializeJson(doc, f);
+      const DeserializationError err = deserializeJson(doc, f, DeserializationOption::Filter(filter));
       f.close();
       if (err) { layoutStatus = String(F("error: ")) + err.c_str(); return false; }
       return parseLayoutDoc(doc, path);
@@ -650,8 +704,9 @@ class WordClockFxUsermod : public Usermod {
 
     // Load one of the embedded stock layouts straight from flash.
     bool loadLayoutFlash(PGM_P json, const char *label) {
+      StaticJsonDocument<192> filter; fillLayoutFilter(filter);
       DynamicJsonDocument doc(8192);
-      const DeserializationError err = deserializeJson(doc, FPSTR(json));
+      const DeserializationError err = deserializeJson(doc, FPSTR(json), DeserializationOption::Filter(filter));
       if (err) { layoutStatus = String(F("error: ")) + err.c_str(); return false; }
       return parseLayoutDoc(doc, label);
     }
@@ -1054,6 +1109,8 @@ class WordClockFxUsermod : public Usermod {
                 "+'.wcfxtbl input[type=checkbox]{margin:0;vertical-align:middle}'"
                 "+'.wcfxtbl button{margin:0;vertical-align:middle}'"
                 "+'.wcfxi{font-size:11px;opacity:.6;font-style:normal;margin-left:4px}'"
+                "+'#wcfxgrid{font-family:monospace;letter-spacing:2px;line-height:1.45;display:inline-block;white-space:pre}'"
+                "+'#wcfxgrid .d{opacity:.3}'"
                 ";document.head.appendChild(s);})();"));
 
       // ---- helpers: section header, relabel, and move fields into a table ------
@@ -1129,7 +1186,23 @@ class WordClockFxUsermod : public Usermod {
                 "var a=document.createElement('a');a.id='wcfxlink';a.target='_blank';"
                 "a.className='wcfxi';a.textContent='layout docs';"
                 "dd.parentNode.insertBefore(a,dd.nextSibling);"
-                "var u=function(){var l=m[dd.value]||'';a.style.display=l?'':'none';a.href=l;};"
+                // letter-grid preview: fetch the selected file, dim filler letters
+                // (cells no word covers); hidden when the file has no "letters" array.
+                "var g=document.createElement('pre');g.id='wcfxgrid';g.className='wcfxcard';"
+                "g.style.display='none';var nb=dd.nextSibling;"
+                "while(nb&&nb.nodeName!=='BR')nb=nb.nextSibling;"
+                "dd.parentNode.insertBefore(g,nb?nb.nextSibling:null);"
+                "var u=function(){var l=m[dd.value]||'';a.style.display=l?'':'none';a.href=l;"
+                "fetch('/'+dd.value).then(function(r){return r.json();}).then(function(j){"
+                "if(!j.letters||!j.words){g.style.display='none';return;}"
+                "var c={};for(var i=0;i<j.words.length;i++){var w=j.words[i];"
+                "for(var k=0;k<w[3];k++)c[w[2]*64+w[1]+k]=1;}"
+                "g.innerHTML='';g.style.display='';"
+                "for(var y=0;y<j.letters.length;y++){var rw=''+j.letters[y];"
+                "for(var x=0;x<rw.length;x++){var s=document.createElement('span');"
+                "s.textContent=rw.charAt(x);if(!c[y*64+x])s.className='d';g.appendChild(s);}"
+                "g.appendChild(document.createTextNode('\\n'));}"
+                "}).catch(function(){g.style.display='none';});};"
                 "dd.addEventListener('change',u);u();})();"));
       // ---- tables -------------------------------------------------------------
       oappend(F("wcfxtbl(['Setting','Value'],[['Show temperature words',['showTemperature']],"

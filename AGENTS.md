@@ -102,8 +102,11 @@ In file order:
   **8k, the 16×16 file overflows 4k**; never WLED's pinned doc). Fallback chain: selected file →
   embedded 16×16 → `WCFX_LAYOUT_EMPTY`. `parseLayoutDoc` repoints `wcfx_layout` to a safe layout
   **before** freeing the old table (settings saves run in async_tcp while the effect renders);
-  on validation failure the active layout is left untouched. Schema adds `"name"` (dropdown
-  label) + `"link"` (docs URL). Config key `layout` is a **String filename** (v1.3.0 ints 0/1/2
+  on validation failure the active layout is left untouched. Schema: `"name"` (dropdown label),
+  `"link"` (docs URL), `"width"`/`"height"` (short `w`/`h` accepted), `"grammar"`, `"words"`
+  (`[role,x,y,len]`; `and` = the `&` tile, legacy alias `amp`), optional `"letters"` (row
+  strings — rendered as the settings-page grid preview client-side, **filtered out of the
+  device parse** via `fillLayoutFilter`). Config key `layout` is a **String filename** (v1.3.0 ints 0/1/2
   migrate in `readFromConfig`; `/wordclock.json` renamed to `/wcfx-custom.json` at boot). Status
   string surfaces on the Info page; `{"WordClockFx":{"reloadLayout":true}}` re-reads without
   reboot. The settings dropdown is built in `appendConfigData` from a root-FS scan of

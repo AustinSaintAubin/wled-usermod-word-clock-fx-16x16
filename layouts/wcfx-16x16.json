@@ -1,1 +1,38 @@
-{"name":"16x16 Exact Minute","link":"https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16","w":16,"h":16,"grammar":"exact","words":[["it",0,0,2],["is",3,0,2],["minutes",0,7,7],["quarter",8,7,7],["a",7,5,1],["half",0,8,4],["past",5,8,4],["until",10,8,5],["oclock",1,12,6],["in",10,12,2],["the",13,12,3],["at",0,14,2],["morning",9,13,7],["afternoon",0,13,9],["evening",9,14,7],["night",3,14,5],["amp",0,15,1],["cold",12,15,4],["cool",5,15,4],["warm",1,15,4],["hot",9,15,3],["m1",13,0,3],["m2",0,1,3],["m3",0,3,5],["m4",12,2,4],["m5",0,2,4],["m6",0,5,3],["m7",0,6,5],["m8",8,5,5],["m9",6,3,4],["m10",4,1,3],["m11",5,2,6],["m12",10,6,6],["m13",8,1,8],["m14",0,4,8],["m16",0,5,7],["m17",0,6,9],["m18",8,5,8],["m19",6,3,8],["m20",6,0,6],["h1",13,11,3],["h2",11,11,3],["h3",5,9,5],["h4",7,11,4],["h5",3,11,4],["h6",0,11,3],["h7",0,9,5],["h8",0,10,5],["h9",6,10,4],["h10",4,10,3],["h11",10,9,6],["h12",10,10,6]]}
+{
+  "name": "16x16 Exact Minute",
+  "link": "https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16",
+  "width": 16, "height": 16, "grammar": "exact",
+  "letters": [
+    "ITKISSTWENTYTONE",
+    "TWOWTENJTHIRTEEN",
+    "FIVEMELEVENBFOUR",
+    "THREEPNINETEENSU",
+    "FOURTEENMIDNIGHT",
+    "SIXTEENAEIGHTEEN",
+    "SEVENTEENYTWELVE",
+    "MINUTESDQUARTERB",
+    "HALFJPASTQUNTILL",
+    "SEVENTHREEELEVEN",
+    "EIGHTENINETWELVE",
+    "SIXFIVEFOURTWONE",
+    "ZOCLOCKJATINXTHE",
+    "AFTERNOONMORNING",
+    "ATKNIGHTZEVENING",
+    "&WARMCOOLHOTCOLD"
+  ],
+  "words": [
+    ["it",0,0,2],      ["is",3,0,2],
+    ["minutes",0,7,7], ["quarter",8,7,7],   ["a",7,5,1],
+    ["half",0,8,4],    ["past",5,8,4],      ["until",10,8,5],  ["oclock",1,12,6],
+    ["in",10,12,2],    ["the",13,12,3],     ["at",0,14,2],
+    ["morning",9,13,7],["afternoon",0,13,9],["evening",9,14,7],["night",3,14,5],
+    ["and",0,15,1],    ["cold",12,15,4],    ["cool",5,15,4],   ["warm",1,15,4],  ["hot",9,15,3],
+    ["m1",13,0,3],     ["m2",0,1,3],        ["m3",0,3,5],      ["m4",12,2,4],    ["m5",0,2,4],
+    ["m6",0,5,3],      ["m7",0,6,5],        ["m8",8,5,5],      ["m9",6,3,4],     ["m10",4,1,3],
+    ["m11",5,2,6],     ["m12",10,6,6],      ["m13",8,1,8],     ["m14",0,4,8],
+    ["m16",0,5,7],     ["m17",0,6,9],       ["m18",8,5,8],     ["m19",6,3,8],    ["m20",6,0,6],
+    ["h1",13,11,3],    ["h2",11,11,3],      ["h3",5,9,5],      ["h4",7,11,4],    ["h5",3,11,4],
+    ["h6",0,11,3],     ["h7",0,9,5],        ["h8",0,10,5],     ["h9",6,10,4],    ["h10",4,10,3],
+    ["h11",10,9,6],    ["h12",10,10,6]
+  ]
+}

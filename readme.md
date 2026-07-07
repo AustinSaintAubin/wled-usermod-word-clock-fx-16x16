@@ -130,7 +130,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.4.1` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.4.2` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
@@ -182,17 +182,23 @@ canonical copies live in [`layouts/`](layouts/). Format:
 
 ```json
 { "name": "My 11x10", "link": "https://example.com/my-clock-docs",
-  "w": 11, "h": 10, "grammar": "five",
+  "width": 11, "height": 10, "grammar": "five",
+  "letters": [ "ITLISASAMPM", "ACQUARTERDC" ],
   "words": [ ["it",0,0,2], ["is",3,0,2], ["h1",0,5,3], ["oclock",5,9,6] ] }
 ```
 
 - `name` — dropdown label (falls back to the filename); `link` — optional docs URL shown as
   a clickable link in the settings and on the Info page.
-- `w`/`h` — grid size (1–32 each); `grammar` — `"five"` or `"exact"`.
+- `width`/`height` — grid size (1–32 each); `grammar` — `"five"` or `"exact"`.
+- `letters` — optional array of row strings (the physical letter grid). The usermod settings
+  page renders it as a live preview under the Layout dropdown, dimming filler letters that no
+  word covers — handy for spotting off-by-one word coordinates. Ignored by the firmware's
+  clock logic.
 - Each word is `[role, x, y, len]`: 0-indexed top-left cell + run length (horizontal).
 - Roles: `it is a quarter half past to until oclock minutes am pm in the at morning
-  afternoon evening night amp cold cool warm hot`, minute numbers `m1`–`m20` (+ `m25` for a
-  dedicated TWENTYFIVE tile), hours `h1`–`h12`. `until` is an alias of `to`. Repeating a role
+  afternoon evening night and cold cool warm hot` (`and` = the `&` tile before a temperature
+  word), minute numbers `m1`–`m20` (+ `m25` for a dedicated TWENTYFIVE tile), hours
+  `h1`–`h12`. `until` is an alias of `to`; `amp` is a legacy alias of `and`. Repeating a role
   makes a multi-segment word (all segments light). Roles the grammar wants but the layout
   lacks are simply skipped.
 - After editing a file, either save the usermod settings again, reboot, or send

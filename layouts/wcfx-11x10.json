@@ -1,1 +1,29 @@
-{"name":"11x10 WordClock 2022","link":"https://www.printables.com/model/311949-wordclock-2022","w":11,"h":10,"grammar":"five","words":[["it",0,0,2],["is",3,0,2],["am",7,0,2],["pm",9,0,2],["a",0,1,1],["quarter",2,1,7],["m20",0,2,6],["m5",6,2,4],["half",0,3,4],["m10",5,3,3],["to",9,3,2],["past",0,4,4],["h9",7,4,4],["h1",0,5,3],["h6",3,5,3],["h3",6,5,5],["h4",0,6,4],["h5",4,6,4],["h2",8,6,3],["h8",0,7,5],["h11",5,7,6],["h7",0,8,5],["h12",5,8,6],["h10",0,9,3],["oclock",5,9,6]]}
+{
+  "name": "11x10 WordClock 2022",
+  "link": "https://www.printables.com/model/311949-wordclock-2022",
+  "width": 11, "height": 10, "grammar": "five",
+  "letters": [
+    "ITLISASAMPM",
+    "ACQUARTERDC",
+    "TWENTYFIVEX",
+    "HALFSTENFTO",
+    "PASTERUNINE",
+    "ONESIXTHREE",
+    "FOURFIVETWO",
+    "EIGHTELEVEN",
+    "SEVENTWELVE",
+    "TENSEOCLOCK"
+  ],
+  "words": [
+    ["it",0,0,2],   ["is",3,0,2],   ["am",7,0,2], ["pm",9,0,2],
+    ["a",0,1,1],    ["quarter",2,1,7],
+    ["m20",0,2,6],  ["m5",6,2,4],
+    ["half",0,3,4], ["m10",5,3,3],  ["to",9,3,2],
+    ["past",0,4,4], ["h9",7,4,4],
+    ["h1",0,5,3],   ["h6",3,5,3],   ["h3",6,5,5],
+    ["h4",0,6,4],   ["h5",4,6,4],   ["h2",8,6,3],
+    ["h8",0,7,5],   ["h11",5,7,6],
+    ["h7",0,8,5],   ["h12",5,8,6],
+    ["h10",0,9,3],  ["oclock",5,9,6]
+  ]
+}
