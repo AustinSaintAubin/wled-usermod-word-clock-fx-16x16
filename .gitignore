@@ -1,4 +1,5 @@
 # PlatformIO / build artifacts
+wcfx_layouts.generated.h
 .pio/
 .pioenvs/
 .piolibdeps/

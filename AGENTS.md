@@ -84,11 +84,13 @@ Gotchas:
 In file order:
 - **Layouts + `wcfxBuildMask()`** — a layout (`WcfxLayout`) = dims + grammar id + a role-tagged
   word table (`WcfxLayoutWord {role,x,y,len}`, roles in `WcfxRole`: WR_IT…WR_HOT, WR_M1..M20/M25,
-  WR_H1..H12). Stock faces are **embedded JSON strings** (`WCFX_JSON_16X16`/`WCFX_JSON_11X10`,
-  PROGMEM) seeded to `/wcfx-16x16.json` / `/wcfx-11x10.json` at boot if missing (delete a file to
-  restore stock). The repo's `layouts/` folder holds the **canonical copies**, generated
-  byte-for-byte from the embedded strings — when editing a `WCFX_JSON_*` string, regenerate
-  `layouts/wcfx-*.json` to match (the host-harness emit step does this).
+  WR_H1..H12). **`layouts/*.json` is the single source of truth for stock faces**:
+  `gen_layouts.py` (wired as `library.json` → `"build":{"extraScript":...}`, run automatically
+  by PlatformIO before compiling; also runs standalone) embeds every file into
+  `wcfx_layouts.generated.h` (gitignored — **never edit it**, edit the JSON files) as the
+  `WCFX_EMBEDDED[]` {path,json} array. Each entry is seeded to the FS root at boot if missing
+  (delete a file to restore stock); a file dropped into `layouts/` is embedded + seeded
+  automatically on the next build.
   Two grammar engines (exact-minute / floored 5-minute) drive any layout via
   `wcfxLightRole()`; roles a layout lacks are silent no-ops. Mask is
   `WcfxRow(uint32_t)[WCFX_MAX_H]` (max 32×32). Works in logical X/Y only (serpentine handled by
@@ -100,7 +102,7 @@ In file order:
 - **Layout loading** — every layout is parsed from JSON into a heap table:
   `loadLayoutFile()`/`loadLayoutFlash()` → `parseLayoutDoc()` (own `DynamicJsonDocument(8192)` —
   **8k, the 16×16 file overflows 4k**; never WLED's pinned doc). Fallback chain: selected file →
-  embedded 16×16 → `WCFX_LAYOUT_EMPTY`. `parseLayoutDoc` repoints `wcfx_layout` to a safe layout
+  embedded fallback (`wcfxFallbackJson()`: the 16×16 entry, else the first) → `WCFX_LAYOUT_EMPTY`. `parseLayoutDoc` repoints `wcfx_layout` to a safe layout
   **before** freeing the old table (settings saves run in async_tcp while the effect renders);
   on validation failure the active layout is left untouched. Schema: `"name"` (dropdown label),
   `"link"` (docs URL), `"width"`/`"height"` (short `w`/`h` accepted), `"grammar"`, `"words"`

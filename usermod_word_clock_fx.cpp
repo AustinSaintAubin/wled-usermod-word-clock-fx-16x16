@@ -10,7 +10,7 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.4.2
+ * Version : 1.4.3
  * Updated : 2026-07-07
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
@@ -23,7 +23,8 @@
  * The effect is 2D: configure the matrix in WLED's LED preferences (set the
  * serpentine/rotation there to match the physical wiring). This code works purely
  * in logical X/Y and never touches raw LED indices. Word layouts are /wcfx-*.json
- * files on the WLED filesystem (add your own via the /edit page); the two stock faces
+ * files on the WLED filesystem (add your own via the /edit page); the stock faces
+ * (source of truth: the repo's layouts/ folder, embedded at build by gen_layouts.py)
  * are seeded at boot if missing (delete one to restore stock):
  *   - wcfx-16x16.json exact-minute (default), e.g. "IT IS TWENTY ONE MINUTES PAST SEVEN..."
  *   - wcfx-11x10.json "WordClock 2022" (printables.com/model/311949), 5-minute + AM/PM
@@ -37,7 +38,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.4.2"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.4.3"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -76,90 +77,21 @@ struct WcfxLayout {
   const WcfxLayoutWord *words;   // PROGMEM for the built-in tables, heap for custom
 };
 
-// ---- Stock layouts: embedded as JSON, seeded to the FS at boot -------------------
-// Every layout is a /wcfx-*.json file; the two stock faces below are written to the
-// filesystem if missing (delete a stock file to restore it on reboot). The embedded
-// 16x16 JSON is also the guaranteed fallback when the selected file is missing or
-// invalid. Schema: {"name","link","w","h","grammar","words":[[role,x,y,len],...]}.
+// ---- Stock layouts: layouts/*.json embedded at build, seeded to the FS at boot ---
+// The JSON files in the repo's layouts/ folder are the single source of truth.
+// gen_layouts.py (run automatically by PlatformIO via library.json's extraScript)
+// embeds every layouts/*.json into wcfx_layouts.generated.h as the WCFX_EMBEDDED[]
+// array {path,json}; each is written to the filesystem if missing (delete a stock
+// file to restore it on reboot). The embedded 16x16 doubles as the guaranteed
+// fallback when the selected file is missing or invalid.
+#include "wcfx_layouts.generated.h"
 
-// 16x16 exact-minute (the original MK2 face). The TO tile reads "UNTIL" (alias role);
-// no m15: "A QUARTER" is grammar-handled. The raw string spans lines on purpose — its
-// newlines/indentation are part of the seeded file, keeping it human-readable in /edit;
-// word entries are grouped connectors / period / temperature / minutes / hours.
-static const char WCFX_JSON_16X16[] PROGMEM = R"({
-  "name": "16x16 Exact Minute",
-  "link": "https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16",
-  "width": 16, "height": 16, "grammar": "exact",
-  "letters": [
-    "ITKISSTWENTYTONE",
-    "TWOWTENJTHIRTEEN",
-    "FIVEMELEVENBFOUR",
-    "THREEPNINETEENSU",
-    "FOURTEENMIDNIGHT",
-    "SIXTEENAEIGHTEEN",
-    "SEVENTEENYTWELVE",
-    "MINUTESDQUARTERB",
-    "HALFJPASTQUNTILL",
-    "SEVENTHREEELEVEN",
-    "EIGHTENINETWELVE",
-    "SIXFIVEFOURTWONE",
-    "ZOCLOCKJATINXTHE",
-    "AFTERNOONMORNING",
-    "ATKNIGHTZEVENING",
-    "&WARMCOOLHOTCOLD"
-  ],
-  "words": [
-    ["it",0,0,2],      ["is",3,0,2],
-    ["minutes",0,7,7], ["quarter",8,7,7],   ["a",7,5,1],
-    ["half",0,8,4],    ["past",5,8,4],      ["until",10,8,5],  ["oclock",1,12,6],
-    ["in",10,12,2],    ["the",13,12,3],     ["at",0,14,2],
-    ["morning",9,13,7],["afternoon",0,13,9],["evening",9,14,7],["night",3,14,5],
-    ["and",0,15,1],    ["cold",12,15,4],    ["cool",5,15,4],   ["warm",1,15,4],  ["hot",9,15,3],
-    ["m1",13,0,3],     ["m2",0,1,3],        ["m3",0,3,5],      ["m4",12,2,4],    ["m5",0,2,4],
-    ["m6",0,5,3],      ["m7",0,6,5],        ["m8",8,5,5],      ["m9",6,3,4],     ["m10",4,1,3],
-    ["m11",5,2,6],     ["m12",10,6,6],      ["m13",8,1,8],     ["m14",0,4,8],
-    ["m16",0,5,7],     ["m17",0,6,9],       ["m18",8,5,8],     ["m19",6,3,8],    ["m20",6,0,6],
-    ["h1",13,11,3],    ["h2",11,11,3],      ["h3",5,9,5],      ["h4",7,11,4],    ["h5",3,11,4],
-    ["h6",0,11,3],     ["h7",0,9,5],        ["h8",0,10,5],     ["h9",6,10,4],    ["h10",4,10,3],
-    ["h11",10,9,6],    ["h12",10,10,6]
-  ]
-})";
-
-// 11x10 "WordClock 2022" — 5-minute phrasing with AM/PM; minute FIVE/TEN and hour
-// FIVE/TEN are distinct tiles; TWENTYFIVE lights as TWENTY + FIVE (contiguous row 2).
-// Word entries are grouped one line per physical grid row.
-static const char WCFX_JSON_11X10[] PROGMEM = R"({
-  "name": "11x10 WordClock 2022",
-  "link": "https://www.printables.com/model/311949-wordclock-2022",
-  "width": 11, "height": 10, "grammar": "five",
-  "letters": [
-    "ITLISASAMPM",
-    "ACQUARTERDC",
-    "TWENTYFIVEX",
-    "HALFSTENFTO",
-    "PASTERUNINE",
-    "ONESIXTHREE",
-    "FOURFIVETWO",
-    "EIGHTELEVEN",
-    "SEVENTWELVE",
-    "TENSEOCLOCK"
-  ],
-  "words": [
-    ["it",0,0,2],   ["is",3,0,2],   ["am",7,0,2], ["pm",9,0,2],
-    ["a",0,1,1],    ["quarter",2,1,7],
-    ["m20",0,2,6],  ["m5",6,2,4],
-    ["half",0,3,4], ["m10",5,3,3],  ["to",9,3,2],
-    ["past",0,4,4], ["h9",7,4,4],
-    ["h1",0,5,3],   ["h6",3,5,3],   ["h3",6,5,5],
-    ["h4",0,6,4],   ["h5",4,6,4],   ["h2",8,6,3],
-    ["h8",0,7,5],   ["h11",5,7,6],
-    ["h7",0,8,5],   ["h12",5,8,6],
-    ["h10",0,9,3],  ["oclock",5,9,6]
-  ]
-})";
-
-static const char WCFX_FILE_16X16[] = "/wcfx-16x16.json";
-static const char WCFX_FILE_11X10[] = "/wcfx-11x10.json";
+// The embedded fallback layout: the 16x16 face if present, else the first entry.
+static PGM_P wcfxFallbackJson() {
+  for (unsigned i = 0; i < sizeof(WCFX_EMBEDDED)/sizeof(WCFX_EMBEDDED[0]); i++)
+    if (strcmp(WCFX_EMBEDDED[i].path, "/wcfx-16x16.json") == 0) return WCFX_EMBEDDED[i].json;
+  return WCFX_EMBEDDED[0].json;
+}
 
 // Ultimate fallback if even the flash JSON can't parse (OOM): renders background only.
 static const WcfxLayout WCFX_LAYOUT_EMPTY = { 16, 16, WCFX_GRAM_EXACT, 0, nullptr };
@@ -719,8 +651,8 @@ class WordClockFxUsermod : public Usermod {
       if (f) { f.print(FPSTR(json)); f.close(); }
     }
     static void seedLayoutFiles() {
-      seedLayoutFile(WCFX_FILE_16X16, WCFX_JSON_16X16);
-      seedLayoutFile(WCFX_FILE_11X10, WCFX_JSON_11X10);
+      for (unsigned i = 0; i < sizeof(WCFX_EMBEDDED)/sizeof(WCFX_EMBEDDED[0]); i++)
+        seedLayoutFile(WCFX_EMBEDDED[i].path, WCFX_EMBEDDED[i].json);
       // v1.3.0 kept the custom layout in /wordclock.json; move it into the wcfx- scheme.
       if (WLED_FS.exists(F("/wordclock.json")) && !WLED_FS.exists(F("/wcfx-custom.json")))
         WLED_FS.rename(F("/wordclock.json"), F("/wcfx-custom.json"));
@@ -732,8 +664,8 @@ class WordClockFxUsermod : public Usermod {
       const String path = layoutFile.startsWith("/") ? layoutFile : String('/') + layoutFile;
       if (!loadLayoutFile(path.c_str())) {
         const String err = layoutStatus;   // keep the real error for the Info page
-        if (!loadLayoutFlash(WCFX_JSON_16X16, "built-in 16x16")) wcfx_layout = &WCFX_LAYOUT_EMPTY;
-        layoutStatus = err + F(" (using built-in 16x16)");
+        if (!loadLayoutFlash(wcfxFallbackJson(), "built-in fallback")) wcfx_layout = &WCFX_LAYOUT_EMPTY;
+        layoutStatus = err + F(" (using built-in fallback)");
       }
       wcfx_layoutGen++;                    // effect rebuilds (crossfades) on next frame
     }
