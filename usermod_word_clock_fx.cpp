@@ -10,8 +10,8 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.5.3
- * Updated : 2026-07-07
+ * Version : 1.5.4
+ * Updated : 2026-07-08
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
  *
@@ -38,7 +38,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.5.3"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.5.4"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -1079,6 +1079,8 @@ class WordClockFxUsermod : public Usermod {
                 "+'.wcfxtbl input[type=checkbox]{margin:0;vertical-align:middle}'"
                 "+'.wcfxtbl button{margin:0;vertical-align:middle}'"
                 "+'.wcfxi{font-size:11px;opacity:.6;font-style:normal;margin-left:4px}'"
+                "+'.wcfxlnk{margin-left:8px;font-size:13px;color:#4aa3ff;text-decoration:none}'"
+                "+'.wcfxlnk:hover{text-decoration:underline}'"
                 "+'#wcfxgrid{font-family:monospace;letter-spacing:.8em;line-height:1.45;display:inline-block;white-space:pre}'"
                 "+'#wcfxgrid .d{opacity:.3}'"
                 ";document.head.appendChild(s);})();"));
@@ -1124,7 +1126,8 @@ class WordClockFxUsermod : public Usermod {
                 "wcfxlbl('minuteDots','Minute Dots');"));
       oappend(F("wcfxsec('cornerLeds','Corner Buttons & LEDs');"));
       // Layout dropdown: scan the FS root for wcfx-*.json, label each option by the
-      // file's "name" field, and wire a "layout docs" link from its "link" field.
+      // file's "name" field; a docs link (the layout's name, from its "link" field)
+      // renders right after the dropdown.
       // Only the [file,name,link] entries are runtime-built (sanitized via wcfxJsEntry);
       // head/tail are fixed literals so the quote-balance risk stays contained.
       oappend(F("(function(){var L=["));
@@ -1152,9 +1155,10 @@ class WordClockFxUsermod : public Usermod {
       }
       oappend(F("];L.sort(function(a,b){return a[1]<b[1]?-1:a[1]>b[1]?1:0;});"
                 "var dd=addDropdown('WordClockFx','layout');if(!dd)return;var m={};"
-                "for(var i=0;i<L.length;i++){addOption(dd,L[i][1],L[i][0]);m[L[i][0]]=L[i][2];}"
+                "for(var i=0;i<L.length;i++){addOption(dd,L[i][1],L[i][0]);m[L[i][0]]=[L[i][1],L[i][2]];}"
+                // docs link: normal-size, link-colored, shows the layout's name + arrow
                 "var a=document.createElement('a');a.id='wcfxlink';a.target='_blank';"
-                "a.className='wcfxi';a.textContent='layout docs';"
+                "a.className='wcfxlnk';"
                 "dd.parentNode.insertBefore(a,dd.nextSibling);"
                 // letter-grid preview: fetch the selected file, dim filler letters
                 // (cells no word covers); hidden when the file has no "letters" array.
@@ -1162,7 +1166,8 @@ class WordClockFxUsermod : public Usermod {
                 "g.style.display='none';var nb=dd.nextSibling;"
                 "while(nb&&nb.nodeName!=='BR')nb=nb.nextSibling;"
                 "dd.parentNode.insertBefore(g,nb?nb.nextSibling:null);"
-                "var u=function(){var l=m[dd.value]||'';a.style.display=l?'':'none';a.href=l;"
+                "var u=function(){var e=m[dd.value]||['',''];"
+                "a.style.display=e[1]?'':'none';a.href=e[1];a.textContent=e[0]+' \\u2197';"
                 "fetch('/'+dd.value).then(function(r){return r.json();}).then(function(j){"
                 "if(!j.letters||!j.words){g.style.display='none';return;}"
                 "var c={};for(var i=0;i<j.words.length;i++){var w=j.words[i];"

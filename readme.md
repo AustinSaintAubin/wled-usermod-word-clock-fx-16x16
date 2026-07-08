@@ -130,7 +130,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.5.3` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.5.4` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
@@ -166,8 +166,9 @@ An example preset set [`examples/wled_presets.example.json`](examples/wled_prese
 ### Layouts
 
 Every word face is a **`wcfx-*.json` file in the root of the WLED filesystem**. The **Layout**
-dropdown in the usermod settings lists all of them (sorted by each file's `name` field), and a
-**layout docs** link next to the dropdown opens the file's `link` URL. The two stock faces are
+dropdown in the usermod settings lists all of them (sorted by each file's `name` field), and the
+selected layout's **name renders as a clickable docs link (`↗`)** next to the dropdown, opening
+the file's `link` URL. The two stock faces are
 **seeded at boot if missing** — edit them freely, or delete one to restore the stock version
 on the next reboot:
 
