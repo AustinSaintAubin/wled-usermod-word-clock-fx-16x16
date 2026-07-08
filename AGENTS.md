@@ -84,7 +84,7 @@ Gotchas:
 In file order:
 - **Layouts + `wcfxBuildMask()`** — a layout (`WcfxLayout`) = dims + grammar id + a role-tagged
   word table (`WcfxLayoutWord {role,x,y,len}`, roles in `WcfxRole`: WR_IT…WR_HOT, WR_M1..M20/M25,
-  WR_H1..H12). **`layouts/*.json` is the single source of truth for stock faces**:
+  WR_H1..H12, WR_MIDNIGHT — the optional MIDNIGHT tile shown for TWELVE at/around 00:00). **`layouts/*.json` is the single source of truth for stock faces**:
   `layouts/gen_layouts.py` (wired as `library.json` → `"build":{"extraScript":...}`, run
   automatically by PlatformIO before compiling; also runs standalone) validates each file
   (JSON + structural: word `[role,x,y,len]` bounds, and `letters` grid matching width/height)

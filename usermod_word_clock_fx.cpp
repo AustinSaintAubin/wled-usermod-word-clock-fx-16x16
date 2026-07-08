@@ -10,7 +10,7 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.4.4
+ * Version : 1.5.0
  * Updated : 2026-07-07
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
@@ -38,7 +38,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.4.4"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.5.0"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -62,6 +62,7 @@ enum WcfxRole : uint8_t {
   WR_M25,                   // optional dedicated TWENTYFIVE tile (else TWENTY + FIVE)
   WR_H1,                    // hours: WR_H1 + (h-1) for h = 1..12
   WR_H12 = WR_H1 + 11,
+  WR_MIDNIGHT,              // optional MIDNIGHT tile: replaces "TWELVE" at/around 00:00
   WR_COUNT
 };
 
@@ -132,6 +133,16 @@ static inline void wcfxLightHour(WcfxRow *mask, const WcfxLayout &L, int h12) {
   if (h12 >= 1 && h12 <= 12) wcfxLightRole(mask, L, WR_H1 + (h12 - 1));
 }
 
+// Light the hour word, substituting MIDNIGHT for TWELVE when this hour is 00:00 and the
+// layout carries a MIDNIGHT tile. Returns true only if MIDNIGHT was lit (so the caller can
+// drop the trailing O'CLOCK — "IT IS MIDNIGHT" reads better than "MIDNIGHT O'CLOCK").
+// Layouts without the tile fall back to the numeric hour (TWELVE), unchanged.
+static inline bool wcfxLightHourOrMidnight(WcfxRow *mask, const WcfxLayout &L, int h12, bool isMidnight) {
+  if (isMidnight && wcfxLightRole(mask, L, WR_MIDNIGHT)) return true;
+  wcfxLightHour(mask, L, h12);
+  return false;
+}
+
 // Exact-minute grammar: light the spoken minute value (1..30), "<N> MINUTES".
 static void wcfxLightMinutesExact(WcfxRow *mask, const WcfxLayout &L, int val) {
   if (val == 15) { wcfxLightRole(mask, L, WR_A); wcfxLightRole(mask, L, WR_QUARTER); return; } // "A QUARTER", no MINUTES word
@@ -175,21 +186,21 @@ static void wcfxBuildMask(WcfxRow *mask, const WcfxLayout &L, int h24, int m) {
   int h12;
   if (mm == 0) {
     h12 = h24 % 12; if (h12 == 0) h12 = 12;
-    wcfxLightHour(mask, L, h12);
-    wcfxLightRole(mask, L, WR_OCLOCK);
+    const bool litMidnight = wcfxLightHourOrMidnight(mask, L, h12, h24 == 0);
+    if (!litMidnight) wcfxLightRole(mask, L, WR_OCLOCK);   // "IT IS MIDNIGHT", no O'CLOCK
   } else if (mm <= 30) {             // ... PAST <this hour>
     h12 = h24 % 12; if (h12 == 0) h12 = 12;
     if (five) wcfxLightMinutesFive(mask, L, mm);
     else      wcfxLightMinutesExact(mask, L, mm);
     wcfxLightRole(mask, L, WR_PAST);
-    wcfxLightHour(mask, L, h12);
+    wcfxLightHourOrMidnight(mask, L, h12, h24 == 0);        // ... PAST MIDNIGHT (00:01..00:30)
   } else {                           // ... TO/UNTIL <next hour>
     int hn = (h24 + 1) % 24;
     h12 = hn % 12; if (h12 == 0) h12 = 12;
     if (five) wcfxLightMinutesFive(mask, L, 60 - mm);
     else      wcfxLightMinutesExact(mask, L, 60 - mm);
     wcfxLightRole(mask, L, WR_TO);
-    wcfxLightHour(mask, L, h12);
+    wcfxLightHourOrMidnight(mask, L, h12, hn == 0);         // ... UNTIL MIDNIGHT (23:31..23:59)
   }
 
   if (wcfx_showPeriod) {             // period of day based on real 24h hour
@@ -374,7 +385,9 @@ class WordClockFxUsermod : public Usermod {
     String   cornerColorHex = "FFFFFF";           // RRGGBB or RRGGBBWW
     uint32_t cornerColor = 0xFFFFFFUL;            // parsed from cornerColorHex
     // Minute dots: corner LEDs count minute % 5 — the minutes a 5-minute layout can't say.
-    bool     minuteDots = false;
+    // Only meaningful on 5-minute grammars (an exact-minute face already shows the minute),
+    // so the display is gated to those layouts; default on since that's where it helps.
+    bool     minuteDots = true;
     // Corner order: Top-Left, Top-Right, Bottom-Left, Bottom-Right (matches readme wiring).
     int8_t   cbBtn[4] = { 1, 2, 3, 4 };           // WLED button index per corner (-1 = off)
     int16_t  cbLed[4] = { 257, 259, 256, 258 };   // LED pixel index per corner (-1 = off)
@@ -546,8 +559,9 @@ class WordClockFxUsermod : public Usermod {
       };
       for (unsigned i = 0; i < sizeof(names)/sizeof(names[0]); i++)
         if (!strcmp(t, names[i])) return (int)i;
-      if (!strcmp(t, "until")) return WR_TO;
-      if (!strcmp(t, "amp"))   return WR_AND;   // legacy token for the '&' tile
+      if (!strcmp(t, "until"))    return WR_TO;
+      if (!strcmp(t, "amp"))      return WR_AND;   // legacy token for the '&' tile
+      if (!strcmp(t, "midnight")) return WR_MIDNIGHT;
       if ((t[0] == 'm' || t[0] == 'h') && t[1] >= '0' && t[1] <= '9') {
         const int n = atoi(t + 1);
         if (t[0] == 'm') {
@@ -845,8 +859,9 @@ class WordClockFxUsermod : public Usermod {
       const uint16_t total = strip.getLengthTotal();
       // Minute dots: corners count minute % 5 (the remainder a 5-minute layout can't
       // say), filling in cbLed[] order. Drawn before the button feedback so a held
-      // button still overrides its corner.
-      if (minuteDots && enabled && effectActive()) {
+      // button still overrides its corner. Gated to 5-minute grammars — an exact-minute
+      // face already spells out the minute, so dots there would be redundant.
+      if (minuteDots && enabled && wcfx_layout->grammar == WCFX_GRAM_FIVE && effectActive()) {
         const int dots = minute(localTime) % 5;
         for (int i = 0; i < dots && i < 4; i++) {
           if (cbLed[i] < 0 || cbLed[i] >= (int)total) continue;
@@ -910,6 +925,13 @@ class WordClockFxUsermod : public Usermod {
           snprintf(buf, sizeof(buf), "%.0f", humidity);
           JsonArray aH = user.createNestedArray(F("Word Clock humidity"));
           aH.add(buf); aH.add(F(" %"));
+        }
+        // Surface the live wind gust so "Wind gust above" can be tuned against a real
+        // reading (it drives the WIND weather state but was otherwise invisible).
+        if (haveWind) {
+          snprintf(buf, sizeof(buf), "%.0f", windGust);
+          JsonArray aW = user.createNestedArray(F("Word Clock wind gust"));
+          aW.add(buf); aW.add(F(" km/h"));
         }
         const bool fresh = liveValid && (millis() - liveTime) < LIVE_TTL;
         JsonArray aC = user.createNestedArray(F("Word Clock condition"));
@@ -1025,7 +1047,7 @@ class WordClockFxUsermod : public Usermod {
         configComplete &= getJsonValue(top[WCFX_PRESET_KEYS[i]], preset[WX_CLEAR + i]);
       configComplete &= getJsonValue(top[F("cornerLeds")],     cornerLeds);
       configComplete &= getJsonValue(top[F("cornerColor")],    cornerColorHex);
-      configComplete &= getJsonValue(top[FPSTR(_minuteDots)],  minuteDots, false);
+      configComplete &= getJsonValue(top[FPSTR(_minuteDots)],  minuteDots, true);
       char ck[8];
       for (uint8_t i = 0; i < 4; i++) {
         snprintf(ck, sizeof(ck), "cbBtn%u", (unsigned)i); configComplete &= getJsonValue(top[ck], cbBtn[i]);
@@ -1176,7 +1198,7 @@ class WordClockFxUsermod : public Usermod {
       oappend(F("addInfo('WordClockFx:layout', 1, \"<i class='wcfxi'>add faces: upload wcfx-*.json via /edit; delete a stock file to restore it; position via the segment's 2D bounds</i>\");"));
       oappend(F("addInfo('WordClockFx:cornerLeds', 1, \"<i class='wcfxi'>native WLED buttons; lights mapped LED while held</i>\");"));
       oappend(F("addInfo('WordClockFx:cornerColor', 1, \"<i class='wcfxi'>hex RGB or RGBW</i>\");"));
-      oappend(F("addInfo('WordClockFx:minuteDots', 1, \"<i class='wcfxi'>corner LEDs count the minutes a 5-minute layout can't show (minute % 5)</i>\");"));
+      oappend(F("addInfo('WordClockFx:minuteDots', 1, \"<i class='wcfxi'>corner LEDs count the minutes a 5-minute layout can't show (minute % 5); 5-minute layouts only</i>\");"));
 
       // ---- live status panel + "Update now" -----------------------------------
       oappend(F("addInfo('WordClockFx:fetchWeather', 1, \"<div id='wcfxstat'>loading current weather...</div>"
@@ -1191,6 +1213,7 @@ class WordClockFxUsermod : public Usermod {
                 "var u=(j&&j.u)||{};function g(k){var a=u[k];return a?(Array.isArray(a)?a.join(''):a):'-';}"
                 "var e=document.getElementById('wcfxstat');if(!e)return;var src=g('Word Clock source');"
                 "e.innerHTML='&#127777;&#65039; '+g('Word Clock temperature')+' &nbsp; &#128167; '+g('Word Clock humidity')+"
+                "' &nbsp; &#128168; '+g('Word Clock wind gust')+"
                 "' &nbsp; '+g('Word Clock condition')+'<br>&#128205; '+g('Word Clock location')+"
                 "' &nbsp; &#128260; '+g('Word Clock updated');"
                 "var sp=document.getElementById('wcfxsrc');if(sp){var hm=(src!=='-')?src.match(/href=\"([^\"]+)\"/):null;"

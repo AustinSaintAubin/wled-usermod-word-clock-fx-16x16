@@ -130,7 +130,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.4.4` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.5.0` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
@@ -199,7 +199,8 @@ canonical copies live in [`layouts/`](layouts/), which the firmware embeds at bu
 - Roles: `it is a quarter half past to until oclock minutes am pm in the at morning
   afternoon evening night and cold cool warm hot` (`and` = the `&` tile before a temperature
   word), minute numbers `m1`–`m20` (+ `m25` for a dedicated TWENTYFIVE tile), hours
-  `h1`–`h12`. `until` is an alias of `to`; `amp` is a legacy alias of `and`. Repeating a role
+  `h1`–`h12`, and `midnight` (optional tile lit instead of `TWELVE` at/around 00:00).
+  `until` is an alias of `to`; `amp` is a legacy alias of `and`. Repeating a role
   makes a multi-segment word (all segments light). Roles the grammar wants but the layout
   lacks are simply skipped.
 - After editing a file, either save the usermod settings again, reboot, or send
@@ -212,8 +213,8 @@ the whole matrix (e.g. an 11×10 face padded into a 12×12 matrix), frame it wit
 
 **5-minute grammar** floors to the last 5-minute step (10:04 still reads `TEN O'CLOCK`),
 `PAST`/`TO` around the half hour, `A QUARTER` at :15/:45, `TWENTY FIVE` as TWENTY+FIVE.
-Enable **Minute dots** (Corner buttons section) to show the floored-off 1–4 minutes on the
-corner LEDs.
+**Minute dots** (Corner buttons section, on by default) show the floored-off 1–4 minutes on
+the corner LEDs; they light on 5-minute layouts only (an exact-minute face already says it).
 
 > Upgrading from v1.3.0: the saved numeric layout setting migrates automatically, and an
 > existing `/wordclock.json` custom face is renamed to `/wcfx-custom.json` at boot.
@@ -224,6 +225,9 @@ corner LEDs.
 - 31–59: `IT IS <minutes> MINUTES UNTIL <next hour>` (`A QUARTER UNTIL` at :45)
 - Period: `IN THE MORNING` (00–11), `IN THE AFTERNOON` (12–16), `IN THE EVENING` (17–20),
   `AT NIGHT` (21–23).
+- Midnight: when the layout has a `midnight` tile, the 00:00 hour reads `MIDNIGHT` instead of
+  `TWELVE` (`IT IS MIDNIGHT`, no `O'CLOCK`; also `... PAST MIDNIGHT` and `... UNTIL MIDNIGHT`
+  around it). The stock 16×16 face includes it; layouts without the tile show `TWELVE` as before.
 
 ### Grammar (5-minute layouts)
 - On the step: `IT IS <hour> O'CLOCK`, `FIVE/TEN/A QUARTER/TWENTY/TWENTY FIVE PAST <hour>`,
@@ -286,7 +290,8 @@ Plain HTTP, so no TLS library / `lib_deps`.
   check, a `place` still works even if `useWledLocation` is ticked but WLED's coords are 0,0.
   Open-Meteo only matches the bare city, so a `", State"` qualifier is **dropped** before
   geocoding (e.g. `Edmond, Oklahoma` → `Edmond`); use a **ZIP** if the city name is ambiguous.
-- **Humidity & condition** are shown on the WLED **Info** page alongside temperature.
+- **Humidity, wind gust & condition** are shown on the WLED **Info** page alongside
+  temperature (the live wind gust helps tune `windAbove`).
 - **Update now:** a button in the settings (and `{"WordClockFx":{"update":true}}` via the
   JSON API) fetches the weather immediately. The Usermod settings page shows a **live status
   line** (temp / humidity / condition / location / last-updated, read from `/json/info`) that
@@ -356,11 +361,13 @@ The LED is lit (via `handleOverlayDraw`, scaled by master brightness) only while
 `isButtonPressed()` is true for that button, so momentary and self-locking touch buttons both
 work; when released it returns to its normal output.
 
-**Minute dots** (same section): with a 5-minute layout the words can't show the exact minute —
-enable `Minute dots` and the corner LEDs count the remainder (`minute % 5`, so 10:07 shows
-`FIVE PAST TEN` + 2 dots). Dots fill in the corner-table order (TL → TR → BL → BR by default;
-reorder the LED indices to change the fill direction), use the same `LED color`, and only show
-while the Word Clock FX effect is active. A held corner button still overrides its dot.
+**Minute dots** (same section, **on by default**): with a 5-minute layout the words can't show
+the exact minute — `Minute dots` has the corner LEDs count the remainder (`minute % 5`, so
+10:07 shows `FIVE PAST TEN` + 2 dots). Dots fill in the corner-table order (TL → TR → BL → BR
+by default; reorder the LED indices to change the fill direction), use the same `LED color`,
+and only show while the Word Clock FX effect is active **on a 5-minute layout** (they're
+suppressed on exact-minute faces, which already spell the minute out). A held corner button
+still overrides its dot.
 
 ---
 
