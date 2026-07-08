@@ -10,7 +10,7 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.4.3
+ * Version : 1.4.4
  * Updated : 2026-07-07
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
@@ -24,7 +24,7 @@
  * serpentine/rotation there to match the physical wiring). This code works purely
  * in logical X/Y and never touches raw LED indices. Word layouts are /wcfx-*.json
  * files on the WLED filesystem (add your own via the /edit page); the stock faces
- * (source of truth: the repo's layouts/ folder, embedded at build by gen_layouts.py)
+ * (source of truth: the repo's layouts/ folder, embedded at build by layouts/gen_layouts.py)
  * are seeded at boot if missing (delete one to restore stock):
  *   - wcfx-16x16.json exact-minute (default), e.g. "IT IS TWENTY ONE MINUTES PAST SEVEN..."
  *   - wcfx-11x10.json "WordClock 2022" (printables.com/model/311949), 5-minute + AM/PM
@@ -38,7 +38,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.4.3"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.4.4"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -79,12 +79,12 @@ struct WcfxLayout {
 
 // ---- Stock layouts: layouts/*.json embedded at build, seeded to the FS at boot ---
 // The JSON files in the repo's layouts/ folder are the single source of truth.
-// gen_layouts.py (run automatically by PlatformIO via library.json's extraScript)
-// embeds every layouts/*.json into wcfx_layouts.generated.h as the WCFX_EMBEDDED[]
+// layouts/gen_layouts.py (run automatically by PlatformIO via library.json's extraScript)
+// embeds every layouts/*.json into layouts/_wcfx_layouts.generated.h as the WCFX_EMBEDDED[]
 // array {path,json}; each is written to the filesystem if missing (delete a stock
 // file to restore it on reboot). The embedded 16x16 doubles as the guaranteed
 // fallback when the selected file is missing or invalid.
-#include "wcfx_layouts.generated.h"
+#include "layouts/_wcfx_layouts.generated.h"
 
 // The embedded fallback layout: the 16x16 face if present, else the first entry.
 static PGM_P wcfxFallbackJson() {
@@ -283,6 +283,14 @@ enum WxState : uint8_t {
   WX_ICE, WX_HAIL, WX_HEAT, WX_WIND, WX_SEVERE, WX_COUNT
 };
 
+// Config keys for the per-state presets, in WX_CLEAR..WX_SEVERE order (parallel to
+// preset[WX_CLEAR + i]). One table drives both addToConfig and readFromConfig so the
+// two directions can't drift. String literals live in flash on ESP32 (no RAM cost).
+static const char* const WCFX_PRESET_KEYS[WX_COUNT - WX_CLEAR] = {
+  "presetClear", "presetClouds", "presetFog", "presetDrizzle", "presetRain", "presetSnow",
+  "presetThunder", "presetIce", "presetHail", "presetHeat", "presetWind", "presetSevere"
+};
+
 // ---- Usermod: registers the effect, resolves temperature, drives weather/presets --
 class WordClockFxUsermod : public Usermod {
   private:
@@ -292,8 +300,17 @@ class WordClockFxUsermod : public Usermod {
 
     // Layout selection: a /wcfx-*.json filename in the FS root (stock faces are seeded).
     String          layoutFile   = "wcfx-16x16.json";
-    WcfxLayout      curLayout    = { 0, 0, 0, 0, nullptr };
-    WcfxLayoutWord *curWords     = nullptr;   // heap table backing curLayout
+    // Double-buffered layout storage. parseLayoutDoc() builds the new face into the
+    // inactive slot, then atomically repoints wcfx_layout at it; the previously-active
+    // slot's word table is freed only on the NEXT swap. This is what keeps the effect
+    // safe: the render (loop task, core 1) binds `const WcfxLayout &L = *wcfx_layout`
+    // and reads L.words for a whole frame while a settings save (async_tcp task, core 0)
+    // runs parseLayoutDoc. An in-place free+overwrite would hand that live frame freed
+    // memory / a torn struct; deferring the free to the next swap (frames are ~ms; layout
+    // swaps are seconds apart, user-driven) guarantees no in-flight frame still reads it.
+    WcfxLayout      layoutSlot[2] = { { 0,0,0,0,nullptr }, { 0,0,0,0,nullptr } };
+    WcfxLayoutWord *slotWords[2]  = { nullptr, nullptr };  // heap table backing each slot
+    uint8_t         activeSlot    = 0;
     String          layoutName;               // "name" from the loaded layout file
     String          layoutLink;               // "link" (docs URL) from the loaded layout file
     String          layoutStatus;             // parse result (shown on the Info page)
@@ -349,6 +366,8 @@ class WordClockFxUsermod : public Usermod {
     bool     geoDone = false;
     bool     geoFailed = false;                   // place could not be resolved
     String   geoFor;                              // place string the geo* were resolved for
+    unsigned long geoNextTry = 0;                 // earliest retry after a geocode failure
+    static constexpr unsigned long GEO_RETRY_MS = 60UL * 60UL * 1000UL; // re-geocode a failed place at most hourly
 
     // Corner buttons: light a mapped LED while its (native WLED) button is held.
     bool     cornerLeds = false;
@@ -382,18 +401,7 @@ class WordClockFxUsermod : public Usermod {
     static const char _presets[];
     static const char _heatAbove[];
     static const char _windAbove[];
-    static const char _pClear[];
-    static const char _pClouds[];
-    static const char _pFog[];
-    static const char _pDrizzle[];
-    static const char _pRain[];
-    static const char _pSnow[];
-    static const char _pThunder[];
-    static const char _pIce[];
-    static const char _pHail[];
-    static const char _pHeat[];
-    static const char _pWind[];
-    static const char _pSevere[];
+    // Per-state preset keys are in WCFX_PRESET_KEYS[] (file scope), not individual statics.
 
     uint8_t bandFor(float t) const {
       if (!showTemp) return 0;
@@ -467,7 +475,7 @@ class WordClockFxUsermod : public Usermod {
         }
       }
       http.end();
-      if (!geoDone) geoFailed = true;
+      if (!geoDone) { geoFailed = true; geoNextTry = millis() + GEO_RETRY_MS; }
     }
 
     static const char* stateName(uint8_t s) {
@@ -515,10 +523,16 @@ class WordClockFxUsermod : public Usermod {
       return s;
     }
 
-    // "RRGGBB" or "RRGGBBWW" hex -> packed RGBW.
+    // "RRGGBB" or "RRGGBBWW" hex -> packed RGBW. A malformed value falls back to white
+    // rather than parsing to 0 (black), which would make the corner LEDs / minute dots
+    // look dead with no indication why.
     static uint32_t parseHexColor(const String &s) {
-      uint32_t v = (uint32_t)strtoul(s.c_str(), nullptr, 16);
-      if (s.length() > 6) return RGBW32((v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF);
+      const size_t len = s.length();
+      char *end = nullptr;
+      const uint32_t v = (uint32_t)strtoul(s.c_str(), &end, 16);
+      if ((len != 6 && len != 8) || end != s.c_str() + len)
+        return RGBW32(255, 255, 255, 0);   // not clean 6/8-digit hex -> white
+      if (len == 8) return RGBW32((v >> 24) & 0xFF, (v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF);
       return RGBW32((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF, 0);
     }
 
@@ -603,12 +617,24 @@ class WordClockFxUsermod : public Usermod {
       }
       layoutName = doc["name"] | src;    // display name; falls back to the source label
       layoutLink = doc["link"] | "";     // docs URL for the Info page / settings link
+      // Both render into the Info page via innerHTML — strip HTML-significant chars so a
+      // crafted layout file can't inject markup/script, and cap the name so it can't
+      // overflow the Info panel (settings-page side is sanitized separately by wcfxJsSan).
+      layoutName.replace("\"", ""); layoutName.replace("<", ""); layoutName.replace(">", "");
+      if (layoutName.length() > 40) layoutName = layoutName.substring(0, 40);
       layoutLink.replace("\"", ""); layoutLink.replace("<", "");  // injection-safe
-      wcfx_layout = &WCFX_LAYOUT_EMPTY;  // repoint BEFORE freeing the old table
-      delete[] curWords;
-      curWords  = tbl;
-      curLayout = { (uint8_t)w, (uint8_t)h, grammar, n, curWords };
-      wcfx_layout = &curLayout;
+
+      // Publish the new face into the inactive slot, then repoint. The word table that
+      // backs the slot we're about to overwrite belonged to the buffer-before-last, so no
+      // effect frame still references it — freeing it here is the deferred free (see the
+      // layoutSlot[] declaration). The active slot / wcfx_layout stay valid until the
+      // single-pointer publish below, so a concurrent render never sees a half-built face.
+      const uint8_t next = activeSlot ^ 1;
+      delete[] slotWords[next];
+      slotWords[next]  = tbl;
+      layoutSlot[next] = { (uint8_t)w, (uint8_t)h, grammar, n, tbl };
+      wcfx_layout = &layoutSlot[next];
+      activeSlot  = next;
       layoutStatus = String(F("ok: ")) + n + F(" words, ") + w + 'x' + h + ' ' + gs;
       return true;
     }
@@ -688,7 +714,15 @@ class WordClockFxUsermod : public Usermod {
 
     bool fetch() {
       const bool needPlace = !(useWledLocation && wledLocSet()) && place.length();
-      if (needPlace && (!geoDone || geoFor != place)) geocode();
+      // (Re)geocode only when the place changed, when it was never attempted, or when a
+      // prior failure's hourly backoff has elapsed. Without the backoff a typo'd Place
+      // would re-hit the geocoding API every RETRY_MS (60s) forever, since a failure
+      // leaves geoDone=false and the weather retry loop calls fetch() every minute.
+      if (needPlace) {
+        const bool placeChanged = (geoFor != place);
+        if (placeChanged || (!geoDone && (!geoFailed || (long)(millis() - geoNextTry) >= 0)))
+          geocode();
+      }
       const float la = useLat(), lo = useLon();
       if (la == 0.0f && lo == 0.0f) return false; // location not set/unresolved
       bool ok = fetchOpenMeteo(la, lo);
@@ -934,10 +968,11 @@ class WordClockFxUsermod : public Usermod {
       top[F("cornerLeds")]     = cornerLeds;
       top[F("cornerColor")]    = cornerColorHex;
       top[FPSTR(_minuteDots)]  = minuteDots;
-      top[F("cbBtn0")] = cbBtn[0]; top[F("cbLed0")] = cbLed[0];
-      top[F("cbBtn1")] = cbBtn[1]; top[F("cbLed1")] = cbLed[1];
-      top[F("cbBtn2")] = cbBtn[2]; top[F("cbLed2")] = cbLed[2];
-      top[F("cbBtn3")] = cbBtn[3]; top[F("cbLed3")] = cbLed[3];
+      char ck[8];
+      for (uint8_t i = 0; i < 4; i++) {
+        snprintf(ck, sizeof(ck), "cbBtn%u", (unsigned)i); top[ck] = cbBtn[i];
+        snprintf(ck, sizeof(ck), "cbLed%u", (unsigned)i); top[ck] = cbLed[i];
+      }
       top[FPSTR(_fetch)]       = fetchWeather;
       top[FPSTR(_interval)]    = fetchMinutes;
       top[FPSTR(_useWled)]     = useWledLocation;
@@ -947,18 +982,8 @@ class WordClockFxUsermod : public Usermod {
       top[FPSTR(_presets)]     = weatherPresets;
       top[FPSTR(_heatAbove)]   = heatAbove;
       top[FPSTR(_windAbove)]   = windAbove;
-      top[FPSTR(_pClear)]      = preset[WX_CLEAR];
-      top[FPSTR(_pClouds)]     = preset[WX_CLOUDS];
-      top[FPSTR(_pFog)]        = preset[WX_FOG];
-      top[FPSTR(_pDrizzle)]    = preset[WX_DRIZZLE];
-      top[FPSTR(_pRain)]       = preset[WX_RAIN];
-      top[FPSTR(_pSnow)]       = preset[WX_SNOW];
-      top[FPSTR(_pThunder)]    = preset[WX_THUNDER];
-      top[FPSTR(_pIce)]        = preset[WX_ICE];
-      top[FPSTR(_pHail)]       = preset[WX_HAIL];
-      top[FPSTR(_pHeat)]       = preset[WX_HEAT];
-      top[FPSTR(_pWind)]       = preset[WX_WIND];
-      top[FPSTR(_pSevere)]     = preset[WX_SEVERE];
+      for (uint8_t i = 0; i < WX_COUNT - WX_CLEAR; i++)
+        top[WCFX_PRESET_KEYS[i]] = preset[WX_CLEAR + i];
       top[FPSTR(_showTemp)]    = showTemp;
       top[FPSTR(_fahrenheit)]  = tempFahrenheit;
       top[FPSTR(_thrColdCool)] = thrColdCool;
@@ -996,25 +1021,16 @@ class WordClockFxUsermod : public Usermod {
       configComplete &= getJsonValue(top[FPSTR(_presets)],     weatherPresets);
       configComplete &= getJsonValue(top[FPSTR(_heatAbove)],   heatAbove);
       configComplete &= getJsonValue(top[FPSTR(_windAbove)],   windAbove);
-      configComplete &= getJsonValue(top[FPSTR(_pClear)],      preset[WX_CLEAR]);
-      configComplete &= getJsonValue(top[FPSTR(_pClouds)],     preset[WX_CLOUDS]);
-      configComplete &= getJsonValue(top[FPSTR(_pFog)],        preset[WX_FOG]);
-      configComplete &= getJsonValue(top[FPSTR(_pDrizzle)],    preset[WX_DRIZZLE]);
-      configComplete &= getJsonValue(top[FPSTR(_pRain)],       preset[WX_RAIN]);
-      configComplete &= getJsonValue(top[FPSTR(_pSnow)],       preset[WX_SNOW]);
-      configComplete &= getJsonValue(top[FPSTR(_pThunder)],    preset[WX_THUNDER]);
-      configComplete &= getJsonValue(top[FPSTR(_pIce)],        preset[WX_ICE]);
-      configComplete &= getJsonValue(top[FPSTR(_pHail)],       preset[WX_HAIL]);
-      configComplete &= getJsonValue(top[FPSTR(_pHeat)],       preset[WX_HEAT]);
-      configComplete &= getJsonValue(top[FPSTR(_pWind)],       preset[WX_WIND]);
-      configComplete &= getJsonValue(top[FPSTR(_pSevere)],     preset[WX_SEVERE]);
+      for (uint8_t i = 0; i < WX_COUNT - WX_CLEAR; i++)
+        configComplete &= getJsonValue(top[WCFX_PRESET_KEYS[i]], preset[WX_CLEAR + i]);
       configComplete &= getJsonValue(top[F("cornerLeds")],     cornerLeds);
       configComplete &= getJsonValue(top[F("cornerColor")],    cornerColorHex);
       configComplete &= getJsonValue(top[FPSTR(_minuteDots)],  minuteDots, false);
-      configComplete &= getJsonValue(top[F("cbBtn0")], cbBtn[0]); configComplete &= getJsonValue(top[F("cbLed0")], cbLed[0]);
-      configComplete &= getJsonValue(top[F("cbBtn1")], cbBtn[1]); configComplete &= getJsonValue(top[F("cbLed1")], cbLed[1]);
-      configComplete &= getJsonValue(top[F("cbBtn2")], cbBtn[2]); configComplete &= getJsonValue(top[F("cbLed2")], cbLed[2]);
-      configComplete &= getJsonValue(top[F("cbBtn3")], cbBtn[3]); configComplete &= getJsonValue(top[F("cbLed3")], cbLed[3]);
+      char ck[8];
+      for (uint8_t i = 0; i < 4; i++) {
+        snprintf(ck, sizeof(ck), "cbBtn%u", (unsigned)i); configComplete &= getJsonValue(top[ck], cbBtn[i]);
+        snprintf(ck, sizeof(ck), "cbLed%u", (unsigned)i); configComplete &= getJsonValue(top[ck], cbLed[i]);
+      }
       cornerColor = parseHexColor(cornerColorHex);
       if (fetchMinutes < 1) fetchMinutes = 1;
       // Keep the temperature bands monotonic (cold <= cool <= warm) so a bad config
@@ -1220,18 +1236,7 @@ const char WordClockFxUsermod::_lon[]         PROGMEM = "longitude";
 const char WordClockFxUsermod::_presets[]     PROGMEM = "weatherPresets";
 const char WordClockFxUsermod::_heatAbove[]   PROGMEM = "heatAbove";
 const char WordClockFxUsermod::_windAbove[]   PROGMEM = "windAbove";
-const char WordClockFxUsermod::_pClear[]      PROGMEM = "presetClear";
-const char WordClockFxUsermod::_pClouds[]     PROGMEM = "presetClouds";
-const char WordClockFxUsermod::_pFog[]        PROGMEM = "presetFog";
-const char WordClockFxUsermod::_pDrizzle[]    PROGMEM = "presetDrizzle";
-const char WordClockFxUsermod::_pRain[]       PROGMEM = "presetRain";
-const char WordClockFxUsermod::_pSnow[]       PROGMEM = "presetSnow";
-const char WordClockFxUsermod::_pThunder[]    PROGMEM = "presetThunder";
-const char WordClockFxUsermod::_pIce[]        PROGMEM = "presetIce";
-const char WordClockFxUsermod::_pHail[]       PROGMEM = "presetHail";
-const char WordClockFxUsermod::_pHeat[]       PROGMEM = "presetHeat";
-const char WordClockFxUsermod::_pWind[]       PROGMEM = "presetWind";
-const char WordClockFxUsermod::_pSevere[]     PROGMEM = "presetSevere";
+// Per-state preset keys live in WCFX_PRESET_KEYS[] (file scope, near the WxState enum).
 
 static WordClockFxUsermod usermod_word_clock_fx;
 REGISTER_USERMOD(usermod_word_clock_fx);

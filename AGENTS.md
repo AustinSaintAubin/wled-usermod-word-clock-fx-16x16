@@ -85,10 +85,12 @@ In file order:
 - **Layouts + `wcfxBuildMask()`** — a layout (`WcfxLayout`) = dims + grammar id + a role-tagged
   word table (`WcfxLayoutWord {role,x,y,len}`, roles in `WcfxRole`: WR_IT…WR_HOT, WR_M1..M20/M25,
   WR_H1..H12). **`layouts/*.json` is the single source of truth for stock faces**:
-  `gen_layouts.py` (wired as `library.json` → `"build":{"extraScript":...}`, run automatically
-  by PlatformIO before compiling; also runs standalone) embeds every file into
-  `wcfx_layouts.generated.h` (gitignored — **never edit it**, edit the JSON files) as the
-  `WCFX_EMBEDDED[]` {path,json} array. Each entry is seeded to the FS root at boot if missing
+  `layouts/gen_layouts.py` (wired as `library.json` → `"build":{"extraScript":...}`, run
+  automatically by PlatformIO before compiling; also runs standalone) validates each file
+  (JSON + structural: word `[role,x,y,len]` bounds, and `letters` grid matching width/height)
+  and embeds every file into `layouts/_wcfx_layouts.generated.h` (gitignored — **never edit
+  it**, edit the JSON files) as the `WCFX_EMBEDDED[]` {path,json} array. A malformed layout
+  fails the build with a clear error. Each entry is seeded to the FS root at boot if missing
   (delete a file to restore stock); a file dropped into `layouts/` is embedded + seeded
   automatically on the next build.
   Two grammar engines (exact-minute / floored 5-minute) drive any layout via
