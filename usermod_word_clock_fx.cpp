@@ -10,7 +10,7 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.5.2
+ * Version : 1.5.3
  * Updated : 2026-07-07
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
@@ -38,7 +38,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.5.2"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.5.3"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -1111,7 +1111,7 @@ class WordClockFxUsermod : public Usermod {
       oappend(F("wcfxledTest=function(tr,cells){var td=document.createElement('td');var b=document.createElement('button');b.type='button';b.textContent='Test';"
                 "var cell=cells[1];b.onclick=function(){var ip=cell.querySelector(\"input:not([type='hidden'])\");var v=ip?ip.value:'';if(v==='')return;"
                 "fetch('/json/state',{method:'POST',headers:{'Content-Type':'application/json'},body:'{\"WordClockFx\":{\"ledtest\":'+v+'}}'});};td.appendChild(b);tr.appendChild(td);};"));
-      oappend(F("wcfxsec('enabled','Display');wcfxsec('showTemperature','Temperature words');"
+      oappend(F("wcfxsec('enabled','Display');wcfxsec('showTemperature','Temperature Words');"
                 "wcfxsec('fetchWeather','Weather');wcfxsec('useWledLocation','Location');"
                 "wcfxsec('weatherPresets','Weather \\u2192 Presets');"));
       // Labels for the non-tabled fields (tabled fields are labelled by their table rows).
@@ -1121,8 +1121,8 @@ class WordClockFxUsermod : public Usermod {
                 "wcfxlbl('weatherPresets','Enable presets');wcfxlbl('heatAbove','Heat above (\\u00B0C)');"
                 "wcfxlbl('windAbove','Wind gust above (km/h)');"
                 "wcfxlbl('cornerLeds','Light LED on press');wcfxlbl('cornerColor','LED color');"
-                "wcfxlbl('minuteDots','Minute dots');"));
-      oappend(F("wcfxsec('cornerLeds','Corner buttons');"));
+                "wcfxlbl('minuteDots','Minute Dots');"));
+      oappend(F("wcfxsec('cornerLeds','Corner Buttons & LEDs');"));
       // Layout dropdown: scan the FS root for wcfx-*.json, label each option by the
       // file's "name" field, and wire a "layout docs" link from its "link" field.
       // Only the [file,name,link] entries are runtime-built (sanitized via wcfxJsEntry);
