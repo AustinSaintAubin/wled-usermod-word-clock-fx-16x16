@@ -130,7 +130,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.5.4` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.5.5` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
@@ -200,7 +200,7 @@ canonical copies live in [`layouts/`](layouts/), which the firmware embeds at bu
 - Roles: `it is a quarter half past to until oclock minutes am pm in the at morning
   afternoon evening night and cold cool warm hot` (`and` = the `&` tile before a temperature
   word), minute numbers `m1`–`m20` (+ `m25` for a dedicated TWENTYFIVE tile), hours
-  `h1`–`h12`, and `midnight` (optional tile lit instead of `TWELVE` at/around 00:00).
+  `h1`–`h12`, and `midnight` (optional tile lit instead of `TWELVE` at exactly 00:00).
   `until` is an alias of `to`; `amp` is a legacy alias of `and`. Repeating a role
   makes a multi-segment word (all segments light). Roles the grammar wants but the layout
   lacks are simply skipped.
@@ -226,9 +226,11 @@ the corner LEDs; they light on 5-minute layouts only (an exact-minute face alrea
 - 31–59: `IT IS <minutes> MINUTES UNTIL <next hour>` (`A QUARTER UNTIL` at :45)
 - Period: `IN THE MORNING` (00–11), `IN THE AFTERNOON` (12–16), `IN THE EVENING` (17–20),
   `AT NIGHT` (21–23).
-- Midnight: when the layout has a `midnight` tile, the 00:00 hour reads `MIDNIGHT` instead of
-  `TWELVE` (`IT IS MIDNIGHT`, no `O'CLOCK`; also `... PAST MIDNIGHT` and `... UNTIL MIDNIGHT`
-  around it). The stock 16×16 face includes it; layouts without the tile show `TWELVE` as before.
+- Midnight: when the layout has a `midnight` tile, exactly 00:00 reads `IT IS MIDNIGHT`
+  (no `O'CLOCK`, no period words — it stands alone). Times *around* midnight deliberately say
+  `... PAST TWELVE` / `... UNTIL TWELVE` instead: on the stock 16×16 face the MIDNIGHT tile
+  sits above MINUTES/PAST/UNTIL, so mixed phrases would light out of reading order.
+  Layouts without the tile show `TWELVE` as before.
 
 ### Grammar (5-minute layouts)
 - On the step: `IT IS <hour> O'CLOCK`, `FIVE/TEN/A QUARTER/TWENTY/TWENTY FIVE PAST <hour>`,

@@ -10,8 +10,8 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.5.4
- * Updated : 2026-07-08
+ * Version : 1.5.5
+ * Updated : 2026-07-10
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
  *
@@ -38,7 +38,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.5.4"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.5.5"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -133,9 +133,12 @@ static inline void wcfxLightHour(WcfxRow *mask, const WcfxLayout &L, int h12) {
   if (h12 >= 1 && h12 <= 12) wcfxLightRole(mask, L, WR_H1 + (h12 - 1));
 }
 
-// Light the hour word, substituting MIDNIGHT for TWELVE when this hour is 00:00 and the
-// layout carries a MIDNIGHT tile. Returns true only if MIDNIGHT was lit (so the caller can
-// drop the trailing O'CLOCK — "IT IS MIDNIGHT" reads better than "MIDNIGHT O'CLOCK").
+// Light the hour word, substituting MIDNIGHT for TWELVE — but only for the bare
+// "IT IS MIDNIGHT" at exactly 00:00. Phrases with minutes must NOT use it: the 16x16
+// MIDNIGHT tile sits above MINUTES/PAST/UNTIL on the face, so "... MINUTES UNTIL
+// MIDNIGHT" renders out of reading order (bench-reported); those windows say TWELVE.
+// Returns true only if MIDNIGHT was lit (so the caller can drop O'CLOCK and the
+// period words — "IT IS MIDNIGHT" stands alone).
 // Layouts without the tile fall back to the numeric hour (TWELVE), unchanged.
 static inline bool wcfxLightHourOrMidnight(WcfxRow *mask, const WcfxLayout &L, int h12, bool isMidnight) {
   if (isMidnight && wcfxLightRole(mask, L, WR_MIDNIGHT)) return true;
@@ -184,26 +187,27 @@ static void wcfxBuildMask(WcfxRow *mask, const WcfxLayout &L, int h24, int m) {
   const int  mm   = five ? (m / 5) * 5 : m;
 
   int h12;
+  bool litMidnight = false;
   if (mm == 0) {
     h12 = h24 % 12; if (h12 == 0) h12 = 12;
-    const bool litMidnight = wcfxLightHourOrMidnight(mask, L, h12, h24 == 0);
+    litMidnight = wcfxLightHourOrMidnight(mask, L, h12, h24 == 0);
     if (!litMidnight) wcfxLightRole(mask, L, WR_OCLOCK);   // "IT IS MIDNIGHT", no O'CLOCK
   } else if (mm <= 30) {             // ... PAST <this hour>
     h12 = h24 % 12; if (h12 == 0) h12 = 12;
     if (five) wcfxLightMinutesFive(mask, L, mm);
     else      wcfxLightMinutesExact(mask, L, mm);
     wcfxLightRole(mask, L, WR_PAST);
-    wcfxLightHourOrMidnight(mask, L, h12, h24 == 0);        // ... PAST MIDNIGHT (00:01..00:30)
+    wcfxLightHour(mask, L, h12);     // ... PAST TWELVE at 00:01..00:30 (never MIDNIGHT: bad tile order)
   } else {                           // ... TO/UNTIL <next hour>
     int hn = (h24 + 1) % 24;
     h12 = hn % 12; if (h12 == 0) h12 = 12;
     if (five) wcfxLightMinutesFive(mask, L, 60 - mm);
     else      wcfxLightMinutesExact(mask, L, 60 - mm);
     wcfxLightRole(mask, L, WR_TO);
-    wcfxLightHourOrMidnight(mask, L, h12, hn == 0);         // ... UNTIL MIDNIGHT (23:31..23:59)
+    wcfxLightHour(mask, L, h12);     // ... UNTIL TWELVE at 23:31..23:59 (never MIDNIGHT: bad tile order)
   }
 
-  if (wcfx_showPeriod) {             // period of day based on real 24h hour
+  if (wcfx_showPeriod && !litMidnight) { // period of day based on real 24h hour; "IT IS MIDNIGHT" stands alone
     if (h24 < 12)      { wcfxLightRole(mask, L, WR_IN); wcfxLightRole(mask, L, WR_THE); wcfxLightRole(mask, L, WR_MORNING); }   // 00..11 (after midnight is morning)
     else if (h24 < 17) { wcfxLightRole(mask, L, WR_IN); wcfxLightRole(mask, L, WR_THE); wcfxLightRole(mask, L, WR_AFTERNOON); } // 12..16
     else if (h24 < 21) { wcfxLightRole(mask, L, WR_IN); wcfxLightRole(mask, L, WR_THE); wcfxLightRole(mask, L, WR_EVENING); }   // 17..20
