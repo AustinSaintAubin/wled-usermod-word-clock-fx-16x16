@@ -117,7 +117,7 @@
       <h1>RETICLE</h1>
     </div>
     <p class="brand-sub">Letter-grid panel layout. Type letters into a fixed-pitch grid, verify center-to-center spacing, export cut-ready vector outlines.</p>
-    <p class="brand-meta">v1.2 &middot; 2026/07/11 &middot; <a href="mailto:austinsaintaubin@gmail.com" title="Email Austin St. Aubin">Austin St. Aubin</a></p>
+    <p class="brand-meta">v1.4 &middot; 2026/07/11 &middot; <a href="mailto:austinsaintaubin@gmail.com" title="Email Austin St. Aubin">Austin St. Aubin</a></p>
 
     <div class="section">
       <p class="section-label">Panel</p>
@@ -137,19 +137,20 @@
           <button type="button" id="unit-mm" class="active">mm</button><button type="button" id="unit-in">in</button>
         </div>
       </div>
-      <div class="row"><label for="cellw">Width</label><div class="field"><input type="number" id="cellw" step="0.1" value="15"></div></div>
-      <div class="row"><label for="cellh">Height</label><div class="field"><input type="number" id="cellh" step="0.1" value="15"></div></div>
+      <div class="row"><label for="cellw">Width</label><div class="field"><input type="number" id="cellw" step="0.1" value="33"></div></div>
+      <div class="row"><label for="cellh">Height</label><div class="field"><input type="number" id="cellh" step="0.1" value="33"></div></div>
       <div class="check-row"><input type="checkbox" id="lock-square" checked><label for="lock-square">Lock square cells</label></div>
       <div class="row"><label for="gap">Gap between cells</label><div class="field"><input type="number" id="gap" step="0.1" value="0"></div></div>
     </div>
 
     <div class="section">
       <p class="section-label">Type</p>
-      <div class="row" style="margin-bottom:12px;"><label for="fontsize">Letter size</label><div class="field-suffix"><input type="number" id="fontsize" min="10" max="100" value="62"><span class="suffix">%</span></div></div>
-      <div class="row" style="margin-bottom:12px;"><label for="baseline">Baseline height</label><div class="field-suffix"><input type="number" id="baseline" min="0" max="100" value="28"><span class="suffix">%</span></div></div>
       <div class="row"><label for="font-select">Preview font</label></div>
-      <select id="font-select" style="margin-bottom:8px;"></select>
-      <input type="file" id="font-file" accept=".ttf,.otf,.woff" style="width:100%;font-size:11.5px;color:var(--text-dim);">
+      <select id="font-select" style="margin-bottom:12px;"></select>
+      <div class="row" style="margin-bottom:12px;"><label for="fontsize">Letter size</label><div class="field-suffix"><input type="number" id="fontsize" min="10" max="100" value="76"><span class="suffix">%</span></div></div>
+      <div class="row" style="margin-bottom:12px;"><label for="baseline">Baseline height</label><div class="field-suffix"><input type="number" id="baseline" min="0" max="100" value="22"><span class="suffix">%</span></div></div>
+      <label class="btn" for="font-file">Choose font file</label>
+      <input type="file" id="font-file" accept=".ttf,.otf,.woff" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">
       <p class="hint">Upload the exact font file to render true vector outlines — required for cut-ready export. Fonts with disconnected counters (O, A, B, D, P, Q, R) will need bridges added in your CAM software if you're cutting a single-piece stencil.</p>
       <p class="filename" id="font-status"></p>
       <button class="btn btn-ghost" id="remove-font" style="display:none;">Remove uploaded font</button>
@@ -179,9 +180,9 @@
             <td><input type="checkbox" id="export-grid-center"></td>
           </tr>
           <tr>
-            <td>Corners</td>
-            <td><input type="checkbox" id="show-corners" checked></td>
-            <td><input type="checkbox" id="export-corners"></td>
+            <td>Grid corners</td>
+            <td><input type="checkbox" id="show-grid-corners" checked></td>
+            <td><input type="checkbox" id="export-grid-corners"></td>
           </tr>
         </tbody>
       </table>
@@ -259,18 +260,18 @@
   function makeDefaultState(){
     return {
       rows: 16, cols: 16,
-      cellW: 15, cellH: 15,   // stored in mm always
+      cellW: 33, cellH: 33,   // stored in mm always
       gap: 0,
       unit: 'mm',
       lockSquare: true,
       fontFamily: SYSTEM_FONTS[0].css,
       previewSource: 'system', // 'system' | 'uploaded' — which font is actively shown/exported
-      fontSizePct: 62,
-      baselinePct: 28,
-      showCenters: true, showBorders: true,
-      exportCenters: false, exportBorders: false,
+      fontSizePct: 76,
+      baselinePct: 22,
+      showCenters: true, exportCenters: false,
+      showBorders: true, exportBorders: false,
       showGridCenter: true, exportGridCenter: false,
-      showCorners: true, exportCorners: false,
+      showGridCorners: true, exportGridCorners: false,
       uploadedFont: null, uploadedFontName: '', uploadedFontBuffer: null, uploadedFontExt: '',
       letters: makeEmptyLetters(16,16), selected: null
     };
@@ -297,14 +298,14 @@
   const removeFontBtn = document.getElementById('remove-font');
   const fontSizeInput = document.getElementById('fontsize');
   const baselineInput = document.getElementById('baseline');
-  const showCenters = document.getElementById('show-centers');
-  const showBorders = document.getElementById('show-borders');
+  const showCentersChk = document.getElementById('show-centers');
   const exportCentersChk = document.getElementById('export-centers');
+  const showBordersChk = document.getElementById('show-borders');
   const exportBordersChk = document.getElementById('export-borders');
   const showGridCenterChk = document.getElementById('show-grid-center');
   const exportGridCenterChk = document.getElementById('export-grid-center');
-  const showCornersChk = document.getElementById('show-corners');
-  const exportCornersChk = document.getElementById('export-corners');
+  const showGridCornersChk = document.getElementById('show-grid-corners');
+  const exportGridCornersChk = document.getElementById('export-grid-corners');
   const readout = document.getElementById('readout');
   const exportOutlineBtn = document.getElementById('export-outline');
   const exportTextBtn = document.getElementById('export-text');
@@ -373,10 +374,10 @@
       unit: state.unit, lockSquare: state.lockSquare,
       fontFamily: state.fontFamily,
       fontSizePct: state.fontSizePct, baselinePct: state.baselinePct,
-      showCenters: state.showCenters, showBorders: state.showBorders,
-      exportCenters: state.exportCenters, exportBorders: state.exportBorders,
+      showCenters: state.showCenters, exportCenters: state.exportCenters,
+      showBorders: state.showBorders, exportBorders: state.exportBorders,
       showGridCenter: state.showGridCenter, exportGridCenter: state.exportGridCenter,
-      showCorners: state.showCorners, exportCorners: state.exportCorners,
+      showGridCorners: state.showGridCorners, exportGridCorners: state.exportGridCorners,
       letters: state.letters
     };
     try{ localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(payload)); }
@@ -413,9 +414,12 @@
     if(typeof saved.fontFamily==='string') state.fontFamily = saved.fontFamily;
     if(Number.isFinite(saved.fontSizePct)) state.fontSizePct = clamp(saved.fontSizePct,10,100);
     if(Number.isFinite(saved.baselinePct)) state.baselinePct = clamp(saved.baselinePct,0,100);
-    ['showCenters','showBorders','exportCenters','exportBorders','showGridCenter','exportGridCenter','showCorners','exportCorners'].forEach(k=>{
+    ['showCenters','exportCenters','showBorders','exportBorders','showGridCenter','exportGridCenter','showGridCorners','exportGridCorners'].forEach(k=>{
       if(typeof saved[k]==='boolean') state[k]=saved[k];
     });
+    // backward compatibility: settings saved/exported before corners fields were renamed
+    if(typeof saved.showCorners==='boolean' && typeof saved.showGridCorners!=='boolean') state.showGridCorners = saved.showCorners;
+    if(typeof saved.exportCorners==='boolean' && typeof saved.exportGridCorners!=='boolean') state.exportGridCorners = saved.exportCorners;
     state.letters = makeEmptyLetters(state.rows, state.cols);
     if(Array.isArray(saved.letters)){
       for(let r=0;r<Math.min(state.rows, saved.letters.length); r++){
@@ -451,10 +455,10 @@
       unit: state.unit, lockSquare: state.lockSquare,
       fontFamily: state.fontFamily,
       fontSizePct: state.fontSizePct, baselinePct: state.baselinePct,
-      showCenters: state.showCenters, showBorders: state.showBorders,
-      exportCenters: state.exportCenters, exportBorders: state.exportBorders,
+      showCenters: state.showCenters, exportCenters: state.exportCenters,
+      showBorders: state.showBorders, exportBorders: state.exportBorders,
       showGridCenter: state.showGridCenter, exportGridCenter: state.exportGridCenter,
-      showCorners: state.showCorners, exportCorners: state.exportCorners,
+      showGridCorners: state.showGridCorners, exportGridCorners: state.exportGridCorners,
       letters: state.letters,
       font: state.uploadedFontBuffer ? {
         name: state.uploadedFontName, ext: state.uploadedFontExt,
@@ -489,14 +493,14 @@
     refreshFontSelectOptions();
     fontSizeInput.value = state.fontSizePct;
     baselineInput.value = state.baselinePct;
-    showCenters.checked = state.showCenters;
-    showBorders.checked = state.showBorders;
+    showCentersChk.checked = state.showCenters;
     exportCentersChk.checked = state.exportCenters;
+    showBordersChk.checked = state.showBorders;
     exportBordersChk.checked = state.exportBorders;
     showGridCenterChk.checked = state.showGridCenter;
     exportGridCenterChk.checked = state.exportGridCenter;
-    showCornersChk.checked = state.showCorners;
-    exportCornersChk.checked = state.exportCorners;
+    showGridCornersChk.checked = state.showGridCorners;
+    exportGridCornersChk.checked = state.exportGridCorners;
     removeFontBtn.style.display = state.uploadedFont ? 'block' : 'none';
     storageStatusEl.textContent = STORAGE_OK
       ? 'Settings, grid, and any uploaded font save automatically in this browser.'
@@ -671,7 +675,7 @@
     return g;
   }
 
-  function buildCornerGroup(stroke){
+  function buildGridCornersGroup(stroke){
     const g = document.createElementNS(svgNS,'g');
     const arm = Math.min(state.cellW,state.cellH)*0.6;
     const sw = Math.min(state.cellW,state.cellH)*0.05;
@@ -802,7 +806,7 @@
     svg.appendChild(buildLettersGroup({forceText:false, ink:'var(--ink)'}));
     if(state.showCenters) svg.appendChild(buildCentersGroup('var(--accent)'));
     if(state.showGridCenter) svg.appendChild(buildGridCenterGroup('var(--amber)'));
-    if(state.showCorners) svg.appendChild(buildCornerGroup('var(--amber)'));
+    if(state.showGridCorners) svg.appendChild(buildGridCornersGroup('var(--amber)'));
     svg.appendChild(buildHitGroup());
     svg.appendChild(buildSelectionGroup());
 
@@ -1032,14 +1036,14 @@
   fontSizeInput.addEventListener('input', ()=>{ state.fontSizePct = Math.max(10,Math.min(100,+fontSizeInput.value||62)); render(); });
   baselineInput.addEventListener('input', ()=>{ state.baselinePct = Math.max(0,Math.min(100,+baselineInput.value||28)); render(); });
 
-  showCenters.addEventListener('change', ()=>{ state.showCenters = showCenters.checked; render(); });
-  showBorders.addEventListener('change', ()=>{ state.showBorders = showBorders.checked; render(); });
+  showCentersChk.addEventListener('change', ()=>{ state.showCenters = showCentersChk.checked; render(); });
   exportCentersChk.addEventListener('change', ()=>{ state.exportCenters = exportCentersChk.checked; });
+  showBordersChk.addEventListener('change', ()=>{ state.showBorders = showBordersChk.checked; render(); });
   exportBordersChk.addEventListener('change', ()=>{ state.exportBorders = exportBordersChk.checked; });
   showGridCenterChk.addEventListener('change', ()=>{ state.showGridCenter = showGridCenterChk.checked; render(); });
   exportGridCenterChk.addEventListener('change', ()=>{ state.exportGridCenter = exportGridCenterChk.checked; });
-  showCornersChk.addEventListener('change', ()=>{ state.showCorners = showCornersChk.checked; render(); });
-  exportCornersChk.addEventListener('change', ()=>{ state.exportCorners = exportCornersChk.checked; });
+  showGridCornersChk.addEventListener('change', ()=>{ state.showGridCorners = showGridCornersChk.checked; render(); });
+  exportGridCornersChk.addEventListener('change', ()=>{ state.exportGridCorners = exportGridCornersChk.checked; });
 
   // In-app confirmation for destructive actions — avoids window.confirm(),
   // which sandboxed iframes (like an embedded preview) commonly block silently.
@@ -1117,7 +1121,7 @@
     s.appendChild(buildLettersGroup({forceText:forceText, ink:'#000000', textFontFamily}));
     if(state.exportCenters) s.appendChild(buildCentersGroup('#ff2d55'));
     if(state.exportGridCenter) s.appendChild(buildGridCenterGroup('#ff2d55'));
-    if(state.exportCorners) s.appendChild(buildCornerGroup('#ff2d55'));
+    if(state.exportGridCorners) s.appendChild(buildGridCornersGroup('#ff2d55'));
     return s;
   }
 
