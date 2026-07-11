@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reticle — Letter Grid Layout Tool</title>
+<style>
+  :root{
+    --bg:#14171a;
+    --bg-canvas:#101315;
+    --panel:#1a1e22;
+    --panel-2:#20252a;
+    --border:#2a3036;
+    --border-strong:#3a4149;
+    --ink:#e8eaed;
+    --text:#e8eaed;
+    --text-dim:#8b939b;
+    --text-faint:#565e66;
+    --accent:#4fa8ff;
+    --accent-dim:rgba(79,168,255,0.14);
+    --amber:#e8a33d;
+    --amber-ink:#1a1305;
+    --grid-line:#3a4149;
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  .app{display:grid;grid-template-columns:300px 1fr;height:100vh;}
+  @media (max-width:760px){
+    .app{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto;min-height:100vh;}
+    .sidebar{max-height:60vh;}
+  }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:20px 18px 40px;}
+  .brand{display:flex;align-items:center;gap:9px;margin-bottom:4px;}
+  .brand svg{flex:none;}
+  .brand h1{font-size:15px;letter-spacing:0.14em;margin:0;font-weight:700;}
+  .brand-sub{font-size:11.5px;color:var(--text-faint);margin:0 0 6px;line-height:1.5;}
+  .brand-meta{font-size:10.5px;color:var(--text-faint);margin:0 0 22px;line-height:1.7;font-family:var(--mono);}
+  .brand-meta a{color:var(--text-dim);text-decoration:underline dotted;text-underline-offset:2px;}
+  .brand-meta a:hover{color:var(--accent);text-decoration:underline solid;}
+
+  .section{margin-bottom:22px;}
+  .section-label{font-family:var(--mono);font-size:10.5px;letter-spacing:0.12em;color:var(--text-faint);text-transform:uppercase;margin:0 0 10px;display:flex;align-items:center;gap:8px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  .row{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+  .row label{flex:1;font-size:12.5px;color:var(--text-dim);}
+  .field{width:88px;}
+  .field-suffix{width:88px;display:flex;align-items:center;gap:4px;}
+  .field-suffix input[type=number]{flex:1;min-width:0;width:auto;}
+  .field-suffix .suffix{flex:none;font-size:11px;color:var(--text-dim);font-family:var(--mono);}
+
+  input[type=number], select{
+    width:100%;background:var(--panel-2);border:1px solid var(--border-strong);color:var(--text);
+    border-radius:4px;padding:6px 7px;font-family:var(--mono);font-size:12.5px;
+  }
+  input[type=number]:focus, select:focus, button:focus-visible, input[type=file]:focus{
+    outline:2px solid var(--accent);outline-offset:1px;
+  }
+  select{font-family:var(--sans);}
+
+  .unit-toggle{display:flex;border:1px solid var(--border-strong);border-radius:4px;overflow:hidden;}
+  .unit-toggle button{flex:1;background:var(--panel-2);color:var(--text-dim);border:none;padding:6px 0;font-family:var(--mono);font-size:11.5px;cursor:pointer;}
+  .unit-toggle button.active{background:var(--accent-dim);color:var(--accent);}
+
+  .check-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12.5px;color:var(--text-dim);}
+  .check-row input{accent-color:var(--accent);width:14px;height:14px;}
+  .marker-table{width:100%;border-collapse:collapse;}
+  .marker-table th{font-family:var(--mono);font-size:9.5px;letter-spacing:0.06em;color:var(--text-faint);text-transform:uppercase;font-weight:600;text-align:center;padding:0 0 7px;}
+  .marker-table th:first-child{text-align:left;}
+  .marker-table td{padding:8px 0;border-top:1px solid var(--border);font-size:12px;color:var(--text-dim);}
+  .marker-table td:first-child{text-align:left;}
+  .marker-table td:not(:first-child){text-align:center;}
+  .marker-table input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer;}
+
+  .btn{width:100%;padding:9px 10px;border-radius:5px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--border-strong);background:var(--panel-2);color:var(--text);margin-bottom:8px;letter-spacing:0.01em;}
+  .btn:hover{border-color:var(--text-faint);}
+  .btn:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn-primary{background:var(--amber);color:var(--amber-ink);border-color:var(--amber);}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent;}
+  .btn-danger{color:#e6796f;}
+  .btn-confirm-armed{background:#e6796f !important;color:#1a0f0d !important;border-color:#e6796f !important;font-weight:700;}
+
+  .hint{font-size:11px;color:var(--text-faint);line-height:1.5;margin:6px 0 0;}
+  .filename{font-size:11px;color:var(--accent);font-family:var(--mono);word-break:break-all;margin-top:6px;}
+
+  .readout{background:var(--panel-2);border:1px solid var(--border);border-radius:5px;padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);line-height:1.9;}
+  .readout b{color:var(--text);font-weight:600;}
+
+  /* ---------- canvas ---------- */
+  .canvas-wrap{
+    position:relative;overflow:auto;padding:40px;display:flex;
+    background-color:var(--bg-canvas);
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px);
+    background-size:24px 24px;
+  }
+  .canvas-inner{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+  #grid-svg{flex:1 1 auto;min-width:0;min-height:0;width:100%;max-width:100%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(0,0,0,0.45));}
+  .hit-rect{fill:transparent;pointer-events:all;cursor:pointer;}
+  .selection-rect{pointer-events:none;}
+  .caption{flex:none;font-size:11.5px;color:var(--text-faint);text-align:center;max-width:520px;}
+  .caption kbd{font-family:var(--mono);background:var(--panel-2);border:1px solid var(--border-strong);border-radius:3px;padding:1px 5px;color:var(--text-dim);}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="18" height="18" viewBox="0 0 18 18"><line x1="9" y1="1" x2="9" y2="17" stroke="#4fa8ff" stroke-width="1.4"/><line x1="1" y1="9" x2="17" y2="9" stroke="#4fa8ff" stroke-width="1.4"/><circle cx="9" cy="9" r="4.5" fill="none" stroke="#4fa8ff" stroke-width="1.2"/></svg>
+      <h1>RETICLE</h1>
+    </div>
+    <p class="brand-sub">Letter-grid panel layout. Type letters into a fixed-pitch grid, verify center-to-center spacing, export cut-ready vector outlines.</p>
+    <p class="brand-meta">v1.0 &middot; 2026/07/10 &middot; <a href="mailto:austinsaintaubin@gmail.com" title="Email Austin St. Aubin">Austin St. Aubin</a></p>
+
+    <div class="section">
+      <p class="section-label">Grid</p>
+      <div class="row"><label for="rows">Rows</label><div class="field"><input type="number" id="rows" min="1" max="40" value="16"></div></div>
+      <div class="row"><label for="cols">Columns</label><div class="field"><input type="number" id="cols" min="1" max="40" value="16"></div></div>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Cell size</p>
+      <div class="row"><label>Units</label>
+        <div class="unit-toggle" style="width:88px;">
+          <button type="button" id="unit-mm" class="active">mm</button><button type="button" id="unit-in">in</button>
+        </div>
+      </div>
+      <div class="row"><label for="cellw">Width</label><div class="field"><input type="number" id="cellw" step="0.1" value="15"></div></div>
+      <div class="row"><label for="cellh">Height</label><div class="field"><input type="number" id="cellh" step="0.1" value="15"></div></div>
+      <div class="check-row"><input type="checkbox" id="lock-square" checked><label for="lock-square">Lock square cells</label></div>
+      <div class="row"><label for="gap">Gap between cells</label><div class="field"><input type="number" id="gap" step="0.1" value="0"></div></div>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Type</p>
+      <div class="row" style="margin-bottom:12px;"><label for="fontsize">Letter size</label><div class="field-suffix"><input type="number" id="fontsize" min="10" max="100" value="62"><span class="suffix">%</span></div></div>
+      <div class="row" style="margin-bottom:12px;"><label for="baseline">Baseline height</label><div class="field-suffix"><input type="number" id="baseline" min="0" max="100" value="28"><span class="suffix">%</span></div></div>
+      <div class="row"><label for="font-select">Preview font</label></div>
+      <select id="font-select" style="margin-bottom:8px;"></select>
+      <input type="file" id="font-file" accept=".ttf,.otf,.woff" style="width:100%;font-size:11.5px;color:var(--text-dim);">
+      <p class="hint">Upload the exact font file to render true vector outlines — required for cut-ready export. Fonts with disconnected counters (O, A, B, D, P, Q, R) will need bridges added in your CAM software if you're cutting a single-piece stencil.</p>
+      <p class="filename" id="font-status"></p>
+      <button class="btn btn-ghost" id="remove-font" style="display:none;">Remove uploaded font</button>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Markers</p>
+      <p class="hint" style="margin:0 0 10px;">Screen: shown in the preview here. Export: included in the downloaded SVG.</p>
+      <table class="marker-table">
+        <thead>
+          <tr><th>Marker</th><th>Screen</th><th>Export</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Cell centers</td>
+            <td><input type="checkbox" id="show-centers" checked></td>
+            <td><input type="checkbox" id="export-centers"></td>
+          </tr>
+          <tr>
+            <td>Cell borders</td>
+            <td><input type="checkbox" id="show-borders" checked></td>
+            <td><input type="checkbox" id="export-borders"></td>
+          </tr>
+          <tr>
+            <td>Grid center</td>
+            <td><input type="checkbox" id="show-grid-center" checked></td>
+            <td><input type="checkbox" id="export-grid-center"></td>
+          </tr>
+          <tr>
+            <td>Corners</td>
+            <td><input type="checkbox" id="show-corners" checked></td>
+            <td><input type="checkbox" id="export-corners"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Panel</p>
+      <div class="readout" id="readout"></div>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Export</p>
+      <button class="btn btn-primary" id="export-outline" disabled>Export outlines (cut-ready)</button>
+      <button class="btn" id="export-text">Export text (preview only)</button>
+      <button class="btn btn-ghost btn-danger" id="clear-grid">Clear all letters</button>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Share</p>
+      <p class="hint" style="margin:0 0 10px;">Save your grid, font, and settings as one file to share or reload elsewhere.</p>
+      <button class="btn" id="export-settings">Export settings (.json)</button>
+      <input type="file" id="import-settings-file" accept=".json,application/json" style="width:100%;font-size:11.5px;color:var(--text-dim);margin-top:8px;">
+      <p class="filename" id="import-status"></p>
+    </div>
+
+    <div class="section">
+      <p class="section-label">Storage</p>
+      <p class="hint" id="storage-status" style="margin:0 0 10px;"></p>
+      <button class="btn btn-ghost btn-danger" id="reset-all">Reset everything</button>
+    </div>
+  </aside>
+
+  <main class="canvas-wrap">
+    <div class="canvas-inner">
+      <svg id="grid-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      <p class="caption">Click a cell, then type — or paste tab-separated rows to fill from there. <kbd>Tab</kbd> or a letter key advances · arrow keys move · <kbd>Backspace</kbd> clears.</p>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/opentype.js/0.6.5/opentype.min.js"></script>
+<script>
+(function(){
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const MM_PER_IN = 25.4;
+
+  const SYSTEM_FONTS = [
+    {label:'System UI', css:"-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif"},
+    {label:'Helvetica / Arial', css:"'Helvetica Neue', Helvetica, Arial, sans-serif"},
+    {label:'Georgia (serif)', css:"Georgia, 'Times New Roman', serif"},
+    {label:'Courier (mono)', css:"'Courier New', Courier, monospace"},
+    {label:'Impact (display)', css:"Impact, 'Arial Black', sans-serif"},
+    {label:'Verdana', css:"Verdana, Geneva, sans-serif"}
+  ];
+
+  function makeEmptyLetters(rows, cols){
+    return Array.from({length:rows}, () => Array.from({length:cols}, () => ''));
+  }
+
+  // Single source of truth for "what's allowed in a grid cell" — used by every
+  // path that can write into state.letters (typing, paste, settings load/import).
+  // Any printable, non-whitespace character is allowed; letters are uppercased.
+  function sanitizeLetter(v){
+    if(typeof v !== 'string') return '';
+    const m = v.match(/[^\s\u0000-\u001F\u007F]/u);
+    if(!m) return '';
+    const ch = m[0];
+    return /^[a-z]$/.test(ch) ? ch.toUpperCase() : ch;
+  }
+
+  function sanitizeAllLetters(){
+    for(let r=0;r<state.letters.length;r++){
+      for(let c=0;c<state.letters[r].length;c++){
+        state.letters[r][c] = sanitizeLetter(state.letters[r][c]);
+      }
+    }
+  }
+
+  function makeDefaultState(){
+    return {
+      rows: 16, cols: 16,
+      cellW: 15, cellH: 15,   // stored in mm always
+      gap: 0,
+      unit: 'mm',
+      lockSquare: true,
+      fontFamily: SYSTEM_FONTS[0].css,
+      previewSource: 'system', // 'system' | 'uploaded' — which font is actively shown/exported
+      fontSizePct: 62,
+      baselinePct: 28,
+      showCenters: true, showBorders: true,
+      exportCenters: false, exportBorders: false,
+      showGridCenter: true, exportGridCenter: false,
+      showCorners: true, exportCorners: false,
+      uploadedFont: null, uploadedFontName: '', uploadedFontBuffer: null, uploadedFontExt: '',
+      letters: makeEmptyLetters(16,16), selected: null
+    };
+  }
+
+  const state = makeDefaultState();
+
+  function toDisplay(mm){ return state.unit === 'in' ? mm / MM_PER_IN : mm; }
+  function toMM(v){ return state.unit === 'in' ? v * MM_PER_IN : v; }
+
+  // ---------- DOM refs ----------
+  const svg = document.getElementById('grid-svg');
+  const rowsInput = document.getElementById('rows');
+  const colsInput = document.getElementById('cols');
+  const cellwInput = document.getElementById('cellw');
+  const cellhInput = document.getElementById('cellh');
+  const gapInput = document.getElementById('gap');
+  const lockSquare = document.getElementById('lock-square');
+  const unitMmBtn = document.getElementById('unit-mm');
+  const unitInBtn = document.getElementById('unit-in');
+  const fontSelect = document.getElementById('font-select');
+  const fontFile = document.getElementById('font-file');
+  const fontStatus = document.getElementById('font-status');
+  const removeFontBtn = document.getElementById('remove-font');
+  const fontSizeInput = document.getElementById('fontsize');
+  const baselineInput = document.getElementById('baseline');
+  const showCenters = document.getElementById('show-centers');
+  const showBorders = document.getElementById('show-borders');
+  const exportCentersChk = document.getElementById('export-centers');
+  const exportBordersChk = document.getElementById('export-borders');
+  const showGridCenterChk = document.getElementById('show-grid-center');
+  const exportGridCenterChk = document.getElementById('export-grid-center');
+  const showCornersChk = document.getElementById('show-corners');
+  const exportCornersChk = document.getElementById('export-corners');
+  const readout = document.getElementById('readout');
+  const exportOutlineBtn = document.getElementById('export-outline');
+  const exportTextBtn = document.getElementById('export-text');
+  const clearBtn = document.getElementById('clear-grid');
+  const resetBtn = document.getElementById('reset-all');
+  const storageStatusEl = document.getElementById('storage-status');
+  const exportSettingsBtn = document.getElementById('export-settings');
+  const importSettingsFile = document.getElementById('import-settings-file');
+  const importStatusEl = document.getElementById('import-status');
+
+  function refreshFontSelectOptions(){
+    fontSelect.innerHTML = '';
+    SYSTEM_FONTS.forEach((f,i) => {
+      const opt = document.createElement('option');
+      opt.value = String(i); opt.textContent = f.label;
+      fontSelect.appendChild(opt);
+    });
+    if(state.uploadedFont){
+      const opt = document.createElement('option');
+      opt.value = 'uploaded';
+      opt.textContent = `${state.uploadedFontName || 'Uploaded font'} (uploaded)`;
+      fontSelect.appendChild(opt);
+    }
+    if(state.previewSource === 'uploaded' && state.uploadedFont){
+      fontSelect.value = 'uploaded';
+    } else {
+      const idx = SYSTEM_FONTS.findIndex(f => f.css === state.fontFamily);
+      fontSelect.value = String(idx>=0 ? idx : 0);
+    }
+  }
+  refreshFontSelectOptions();
+
+  // ---------- persistence (localStorage) ----------
+  const STORAGE_KEY_SETTINGS = 'reticle:settings:v1';
+  const STORAGE_KEY_FONT = 'reticle:font:v1';
+
+  function storageAvailable(){
+    try{
+      const t = '__reticle_probe__';
+      localStorage.setItem(t, '1');
+      localStorage.removeItem(t);
+      return true;
+    }catch(e){ return false; }
+  }
+  const STORAGE_OK = storageAvailable();
+
+  function base64ToArrayBuffer(b64){
+    const binary = atob(b64);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
+  }
+
+  let saveSettingsTimer = null;
+  function scheduleSaveSettings(){
+    if(!STORAGE_OK) return;
+    clearTimeout(saveSettingsTimer);
+    saveSettingsTimer = setTimeout(saveSettingsNow, 250);
+  }
+
+  function saveSettingsNow(){
+    if(!STORAGE_OK) return;
+    const payload = {
+      rows: state.rows, cols: state.cols,
+      cellW: state.cellW, cellH: state.cellH, gap: state.gap,
+      unit: state.unit, lockSquare: state.lockSquare,
+      fontFamily: state.fontFamily,
+      fontSizePct: state.fontSizePct, baselinePct: state.baselinePct,
+      showCenters: state.showCenters, showBorders: state.showBorders,
+      exportCenters: state.exportCenters, exportBorders: state.exportBorders,
+      showGridCenter: state.showGridCenter, exportGridCenter: state.exportGridCenter,
+      showCorners: state.showCorners, exportCorners: state.exportCorners,
+      letters: state.letters
+    };
+    try{ localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(payload)); }
+    catch(e){ console.warn('Reticle: could not save settings', e); }
+  }
+
+  function saveFontNow(){
+    if(!STORAGE_OK) return;
+    if(!state.uploadedFontBuffer){
+      try{ localStorage.removeItem(STORAGE_KEY_FONT); }catch(e){}
+      return;
+    }
+    try{
+      const b64 = arrayBufferToBase64(state.uploadedFontBuffer);
+      localStorage.setItem(STORAGE_KEY_FONT, JSON.stringify({
+        name: state.uploadedFontName, ext: state.uploadedFontExt, data: b64
+      }));
+    }catch(e){
+      console.warn('Reticle: could not save font locally (likely too large)', e);
+      fontStatus.innerHTML += ` <span style="color:#e8a33d;">(couldn't save this font locally — you'll need to re-upload it next time)</span>`;
+    }
+  }
+
+  function applySettingsObject(saved){
+    if(!saved) return;
+    const clamp = (n,lo,hi) => Math.max(lo, Math.min(hi, n));
+    if(Number.isFinite(saved.rows)) state.rows = clamp(Math.round(saved.rows),1,40);
+    if(Number.isFinite(saved.cols)) state.cols = clamp(Math.round(saved.cols),1,40);
+    if(Number.isFinite(saved.cellW) && saved.cellW>0) state.cellW = saved.cellW;
+    if(Number.isFinite(saved.cellH) && saved.cellH>0) state.cellH = saved.cellH;
+    if(Number.isFinite(saved.gap) && saved.gap>=0) state.gap = saved.gap;
+    if(saved.unit==='mm' || saved.unit==='in') state.unit = saved.unit;
+    if(typeof saved.lockSquare==='boolean') state.lockSquare = saved.lockSquare;
+    if(typeof saved.fontFamily==='string') state.fontFamily = saved.fontFamily;
+    if(Number.isFinite(saved.fontSizePct)) state.fontSizePct = clamp(saved.fontSizePct,10,100);
+    if(Number.isFinite(saved.baselinePct)) state.baselinePct = clamp(saved.baselinePct,0,100);
+    ['showCenters','showBorders','exportCenters','exportBorders','showGridCenter','exportGridCenter','showCorners','exportCorners'].forEach(k=>{
+      if(typeof saved[k]==='boolean') state[k]=saved[k];
+    });
+    state.letters = makeEmptyLetters(state.rows, state.cols);
+    if(Array.isArray(saved.letters)){
+      for(let r=0;r<Math.min(state.rows, saved.letters.length); r++){
+        const savedRow = saved.letters[r];
+        if(!Array.isArray(savedRow)) continue;
+        for(let c=0;c<Math.min(state.cols, savedRow.length); c++){
+          const v = savedRow[c];
+          state.letters[r][c] = sanitizeLetter(v);
+        }
+      }
+    }
+  }
+
+  function applyFontObject(saved){
+    if(!saved || typeof saved.data !== 'string') return false;
+    if(typeof opentype === 'undefined') return false;
+    try{
+      const buf = base64ToArrayBuffer(saved.data);
+      const font = opentype.parse(buf);
+      state.uploadedFont = font;
+      state.uploadedFontBuffer = buf;
+      state.uploadedFontName = saved.name || 'saved-font';
+      state.uploadedFontExt = saved.ext || 'ttf';
+      return true;
+    }catch(e){ console.warn('Reticle: could not apply font', e); return false; }
+  }
+
+  function buildSettingsExportObject(){
+    return {
+      reticleSettings: true, version: 1,
+      rows: state.rows, cols: state.cols,
+      cellW: state.cellW, cellH: state.cellH, gap: state.gap,
+      unit: state.unit, lockSquare: state.lockSquare,
+      fontFamily: state.fontFamily,
+      fontSizePct: state.fontSizePct, baselinePct: state.baselinePct,
+      showCenters: state.showCenters, showBorders: state.showBorders,
+      exportCenters: state.exportCenters, exportBorders: state.exportBorders,
+      showGridCenter: state.showGridCenter, exportGridCenter: state.exportGridCenter,
+      showCorners: state.showCorners, exportCorners: state.exportCorners,
+      letters: state.letters,
+      font: state.uploadedFontBuffer ? {
+        name: state.uploadedFontName, ext: state.uploadedFontExt,
+        data: arrayBufferToBase64(state.uploadedFontBuffer)
+      } : null
+    };
+  }
+
+  function loadPersistedState(){
+    if(!STORAGE_OK) return;
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY_SETTINGS);
+      if(raw) applySettingsObject(JSON.parse(raw));
+    }catch(e){ console.warn('Reticle: could not load saved settings', e); }
+
+    try{
+      const rawFont = localStorage.getItem(STORAGE_KEY_FONT);
+      if(rawFont){
+        const ok = applyFontObject(JSON.parse(rawFont));
+        state.previewSource = ok ? 'uploaded' : 'system';
+      }
+    }catch(e){ console.warn('Reticle: could not restore saved font', e); }
+  }
+
+  function syncFormControlsFromState(){
+    rowsInput.value = state.rows;
+    colsInput.value = state.cols;
+    lockSquare.checked = state.lockSquare;
+    unitMmBtn.classList.toggle('active', state.unit==='mm');
+    unitInBtn.classList.toggle('active', state.unit!=='mm');
+    refreshUnitFields();
+    refreshFontSelectOptions();
+    fontSizeInput.value = state.fontSizePct;
+    baselineInput.value = state.baselinePct;
+    showCenters.checked = state.showCenters;
+    showBorders.checked = state.showBorders;
+    exportCentersChk.checked = state.exportCenters;
+    exportBordersChk.checked = state.exportBorders;
+    showGridCenterChk.checked = state.showGridCenter;
+    exportGridCenterChk.checked = state.exportGridCenter;
+    showCornersChk.checked = state.showCorners;
+    exportCornersChk.checked = state.exportCorners;
+    removeFontBtn.style.display = state.uploadedFont ? 'block' : 'none';
+    storageStatusEl.textContent = STORAGE_OK
+      ? 'Settings, grid, and any uploaded font save automatically in this browser.'
+      : "This browser is blocking local storage (private/incognito mode, or storage disabled) — nothing will be saved between sessions.";
+  }
+
+  exportSettingsBtn.addEventListener('click', ()=>{
+    const obj = buildSettingsExportObject();
+    const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'reticle-settings.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  importSettingsFile.addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    importSettingsFile.value = ''; // allow re-selecting the same file later
+    try{
+      const text = await file.text();
+      const obj = JSON.parse(text);
+      if(!obj || obj.reticleSettings !== true){
+        importStatusEl.innerHTML = `<span style="color:#e6796f;">That doesn't look like a Reticle settings file.</span>`;
+        return;
+      }
+      applySettingsObject(obj);
+      state.uploadedFont = null; state.uploadedFontBuffer = null; state.uploadedFontName = ''; state.uploadedFontExt = '';
+      state.previewSource = 'system';
+      if(obj.font){
+        if(typeof opentype === 'undefined'){
+          importStatusEl.innerHTML = `<span style="color:#e8a33d;">Settings imported, but the font engine hasn't loaded yet — the included font couldn't be applied. Reload with a connection and re-import.</span>`;
+        } else if(!applyFontObject(obj.font)){
+          importStatusEl.innerHTML = `<span style="color:#e8a33d;">Settings imported, but the included font couldn't be parsed.</span>`;
+        } else {
+          state.previewSource = 'uploaded';
+          importStatusEl.textContent = `Imported settings and font "${state.uploadedFontName}".`;
+        }
+      } else {
+        importStatusEl.textContent = 'Settings imported (no font was included in this file).';
+      }
+      state.selected = null;
+      syncFormControlsFromState();
+      render();
+      saveSettingsNow();
+      saveFontNow();
+    }catch(err){
+      console.warn('Reticle: import failed', err);
+      importStatusEl.innerHTML = `<span style="color:#e6796f;">Couldn't read that file (${err.message || 'invalid JSON'}).</span>`;
+    }
+  });
+
+  armConfirmButton(resetBtn, 'Click again to confirm reset', ()=>{
+    if(STORAGE_OK){
+      try{ localStorage.removeItem(STORAGE_KEY_SETTINGS); localStorage.removeItem(STORAGE_KEY_FONT); }catch(e){}
+    }
+    Object.assign(state, makeDefaultState());
+    fontFile.value = '';
+    fontStatus.textContent = '';
+    removeFontBtn.style.display = 'none';
+    syncFormControlsFromState();
+    render();
+  }, 5000);
+
+  window.addEventListener('beforeunload', ()=>{
+    clearTimeout(saveSettingsTimer);
+    saveSettingsNow();
+  });
+
+  // ---------- geometry helpers ----------
+  function totalW(){ return state.cols*state.cellW + (state.cols-1)*state.gap; }
+  function totalH(){ return state.rows*state.cellH + (state.rows-1)*state.gap; }
+  function cellX(c){ return c*(state.cellW+state.gap); }
+  function cellY(r){ return r*(state.cellH+state.gap); }
+  function fontSizeMM(){ return (state.fontSizePct/100) * Math.min(state.cellW, state.cellH); }
+  function baselineY(r){ return cellY(r) + state.cellH*(1 - state.baselinePct/100); }
+
+  function extractPathD(path){
+    if (typeof path.toPathData === 'function') { try { return path.toPathData(3); } catch(e){} }
+    if (typeof path.toSVG === 'function') {
+      try{
+        const s = path.toSVG(3);
+        const m = s.match(/d="([^"]+)"/);
+        if (m) return m[1];
+      }catch(e){}
+    }
+    // last-resort: build the 'd' string directly from raw path commands
+    if (Array.isArray(path.commands)) {
+      let d = '';
+      path.commands.forEach(cmd=>{
+        switch(cmd.type){
+          case 'M': d += `M${cmd.x} ${cmd.y} `; break;
+          case 'L': d += `L${cmd.x} ${cmd.y} `; break;
+          case 'C': d += `C${cmd.x1} ${cmd.y1} ${cmd.x2} ${cmd.y2} ${cmd.x} ${cmd.y} `; break;
+          case 'Q': d += `Q${cmd.x1} ${cmd.y1} ${cmd.x} ${cmd.y} `; break;
+          case 'Z': case 'z': d += 'Z '; break;
+        }
+      });
+      return d.trim();
+    }
+    return '';
+  }
+
+  // Path.getBoundingBox() and Font.getAdvanceWidth() aren't available on every
+  // opentype.js build (notably the older one served from cdnjs). Computing the
+  // horizontal extent directly from the path's own command points works on all
+  // versions, since `commands` is the one thing every build exposes.
+  function pathHorizontalExtent(path){
+    let minX = Infinity, maxX = -Infinity;
+    if (Array.isArray(path.commands)) {
+      path.commands.forEach(cmd=>{
+        ['x','x1','x2'].forEach(k=>{
+          if (typeof cmd[k] === 'number') { minX = Math.min(minX, cmd[k]); maxX = Math.max(maxX, cmd[k]); }
+        });
+      });
+    }
+    if (!isFinite(minX)) { minX = 0; maxX = 0; }
+    return { x1: minX, x2: maxX };
+  }
+
+  // ---------- group builders (shared by live render + export) ----------
+  function buildBordersGroup(stroke){
+    const g = document.createElementNS(svgNS,'g');
+    for(let r=0;r<state.rows;r++){
+      for(let c=0;c<state.cols;c++){
+        const rect = document.createElementNS(svgNS,'rect');
+        rect.setAttribute('x', cellX(c)); rect.setAttribute('y', cellY(r));
+        rect.setAttribute('width', state.cellW); rect.setAttribute('height', state.cellH);
+        rect.setAttribute('fill','none'); rect.setAttribute('stroke', stroke);
+        rect.setAttribute('stroke-width', Math.max(state.cellW,state.cellH)*0.012);
+        g.appendChild(rect);
+      }
+    }
+    return g;
+  }
+
+  function buildCrosshairMark(cx, cy, arm, stroke, strokeWidth){
+    const g = document.createElementNS(svgNS,'g');
+    const h = document.createElementNS(svgNS,'line');
+    h.setAttribute('x1',cx-arm); h.setAttribute('x2',cx+arm); h.setAttribute('y1',cy); h.setAttribute('y2',cy);
+    const v = document.createElementNS(svgNS,'line');
+    v.setAttribute('x1',cx); v.setAttribute('x2',cx); v.setAttribute('y1',cy-arm); v.setAttribute('y2',cy+arm);
+    [h,v].forEach(l=>{ l.setAttribute('stroke',stroke); l.setAttribute('stroke-width', strokeWidth); g.appendChild(l); });
+    return g;
+  }
+
+  function buildCentersGroup(stroke){
+    const g = document.createElementNS(svgNS,'g');
+    const arm = Math.min(state.cellW,state.cellH)*0.13;
+    const sw = Math.min(state.cellW,state.cellH)*0.02;
+    for(let r=0;r<state.rows;r++){
+      for(let c=0;c<state.cols;c++){
+        const cx = cellX(c)+state.cellW/2, cy = cellY(r)+state.cellH/2;
+        g.appendChild(buildCrosshairMark(cx, cy, arm, stroke, sw));
+      }
+    }
+    return g;
+  }
+
+  function buildGridCenterGroup(stroke){
+    const g = document.createElementNS(svgNS,'g');
+    const arm = Math.min(state.cellW,state.cellH)*0.55;
+    const sw = Math.min(state.cellW,state.cellH)*0.035;
+    const cx = totalW()/2, cy = totalH()/2;
+    g.appendChild(buildCrosshairMark(cx, cy, arm, stroke, sw));
+    const circle = document.createElementNS(svgNS,'circle');
+    circle.setAttribute('cx', cx); circle.setAttribute('cy', cy);
+    circle.setAttribute('r', arm*0.55);
+    circle.setAttribute('fill','none'); circle.setAttribute('stroke', stroke); circle.setAttribute('stroke-width', sw);
+    g.appendChild(circle);
+    return g;
+  }
+
+  function buildCornerGroup(stroke){
+    const g = document.createElementNS(svgNS,'g');
+    const arm = Math.min(state.cellW,state.cellH)*0.55;
+    const sw = Math.min(state.cellW,state.cellH)*0.035;
+    const w = totalW(), h = totalH();
+    [[0,0],[w,0],[0,h],[w,h]].forEach(([x,y])=>{
+      g.appendChild(buildCrosshairMark(x, y, arm, stroke, sw));
+    });
+    return g;
+  }
+
+  let outlineFailures = 0;
+  let outlineAttempts = 0;
+
+  function buildLettersGroup(opts){
+    // opts: { forceText: bool, ink: string, textFontFamily?: string }
+    const g = document.createElementNS(svgNS,'g');
+    const useOutline = !opts.forceText && state.previewSource === 'uploaded' && !!state.uploadedFont;
+    const textFamily = opts.textFontFamily || state.fontFamily;
+    const fs = fontSizeMM();
+    if (useOutline) { outlineFailures = 0; outlineAttempts = 0; }
+    for(let r=0;r<state.rows;r++){
+      for(let c=0;c<state.cols;c++){
+        const ch = state.letters[r][c];
+        if(!ch) continue;
+        const x = cellX(c), y = cellY(r);
+        const yB = baselineY(r);
+        if(useOutline){
+          outlineAttempts++;
+          try{
+            const probe = state.uploadedFont.getPath(ch, 0, 0, fs);
+            const bbox = pathHorizontalExtent(probe);
+            const glyphW = bbox.x2 - bbox.x1;
+            const xStart = x + state.cellW/2 - glyphW/2 - bbox.x1;
+            const path = state.uploadedFont.getPath(ch, xStart, yB, fs);
+            const d = extractPathD(path);
+            if(d){
+              const pathEl = document.createElementNS(svgNS,'path');
+              pathEl.setAttribute('d', d);
+              pathEl.setAttribute('fill', opts.ink);
+              g.appendChild(pathEl);
+              continue;
+            } else {
+              outlineFailures++;
+            }
+          }catch(e){ outlineFailures++; console.warn('Outline render failed for', JSON.stringify(ch), e); }
+        }
+        const textEl = document.createElementNS(svgNS,'text');
+        textEl.setAttribute('x', x+state.cellW/2);
+        textEl.setAttribute('y', yB);
+        textEl.setAttribute('text-anchor','middle');
+        textEl.setAttribute('font-family', textFamily);
+        textEl.setAttribute('font-size', fs);
+        textEl.setAttribute('fill', opts.ink);
+        textEl.textContent = ch;
+        g.appendChild(textEl);
+      }
+    }
+    return g;
+  }
+
+  function buildHitGroup(){
+    const g = document.createElementNS(svgNS,'g');
+    for(let r=0;r<state.rows;r++){
+      for(let c=0;c<state.cols;c++){
+        const rect = document.createElementNS(svgNS,'rect');
+        rect.setAttribute('x', cellX(c)); rect.setAttribute('y', cellY(r));
+        rect.setAttribute('width', state.cellW); rect.setAttribute('height', state.cellH);
+        rect.setAttribute('class','hit-rect');
+        rect.dataset.r = r; rect.dataset.c = c;
+        g.appendChild(rect);
+      }
+    }
+    return g;
+  }
+
+  function buildSelectionGroup(){
+    const g = document.createElementNS(svgNS,'g');
+    if(state.selected){
+      const {r,c} = state.selected;
+      const rect = document.createElementNS(svgNS,'rect');
+      rect.setAttribute('x', cellX(c)); rect.setAttribute('y', cellY(r));
+      rect.setAttribute('width', state.cellW); rect.setAttribute('height', state.cellH);
+      rect.setAttribute('fill','none'); rect.setAttribute('stroke','#4fa8ff');
+      rect.setAttribute('stroke-width', Math.max(state.cellW,state.cellH)*0.035);
+      rect.setAttribute('class','selection-rect');
+      g.appendChild(rect);
+    }
+    return g;
+  }
+
+  // ---------- live render ----------
+  function render(){
+    const w = totalW(), h = totalH();
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.setAttribute('width', w+'mm');
+    svg.setAttribute('height', h+'mm');
+    svg.innerHTML = '';
+
+    // Panel background drawn as content (not CSS on the element), so it hugs
+    // the grid exactly rather than filling the letterboxed element box.
+    const bg = document.createElementNS(svgNS,'rect');
+    bg.setAttribute('x', 0); bg.setAttribute('y', 0);
+    bg.setAttribute('width', w); bg.setAttribute('height', h);
+    bg.setAttribute('fill', '#1b1f23');
+    svg.appendChild(bg);
+
+    if(state.showBorders) svg.appendChild(buildBordersGroup('var(--grid-line)'));
+    svg.appendChild(buildLettersGroup({forceText:false, ink:'var(--ink)'}));
+    if(state.showCenters) svg.appendChild(buildCentersGroup('var(--accent)'));
+    if(state.showGridCenter) svg.appendChild(buildGridCenterGroup('var(--amber)'));
+    if(state.showCorners) svg.appendChild(buildCornerGroup('var(--amber)'));
+    svg.appendChild(buildHitGroup());
+    svg.appendChild(buildSelectionGroup());
+
+    svg.querySelectorAll('.hit-rect').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        state.selected = { r:+el.dataset.r, c:+el.dataset.c };
+        render();
+      });
+    });
+
+    updateReadout();
+    const fontIsActive = state.previewSource === 'uploaded' && !!state.uploadedFont;
+    exportOutlineBtn.disabled = !fontIsActive;
+    exportOutlineBtn.title = !state.uploadedFont
+      ? 'Upload a font file to enable cut-ready export.'
+      : (fontIsActive ? '' : 'Select your uploaded font in "Preview font" above to enable cut-ready export.');
+    exportTextBtn.textContent = fontIsActive ? 'Export text (with embedded font)' : 'Export text (preview only)';
+    if(state.uploadedFont && !fontIsActive){
+      fontStatus.textContent = `Loaded: ${state.uploadedFontName} — select it above to preview or export its outlines.`;
+    } else if(state.uploadedFont){
+      if(outlineAttempts > 0 && outlineFailures === outlineAttempts){
+        fontStatus.innerHTML = `<span style="color:#e6796f;">${state.uploadedFontName} loaded, but outline rendering failed for every letter — showing fallback text. Try re-exporting the font as .ttf, or open the browser console for details.</span>`;
+      } else if(outlineFailures > 0){
+        fontStatus.innerHTML = `<span style="color:#e8a33d;">${state.uploadedFontName} — outlines active (${outlineFailures} of ${outlineAttempts} letters fell back to text; check console).</span>`;
+      } else {
+        fontStatus.textContent = `Loaded: ${state.uploadedFontName} — outlines active`;
+      }
+    }
+    scheduleSaveSettings();
+  }
+
+  function updateReadout(){
+    const u = state.unit;
+    readout.innerHTML =
+      `Panel size: <b>${toDisplay(totalW()).toFixed(u==='in'?2:1)} × ${toDisplay(totalH()).toFixed(u==='in'?2:1)} ${u}</b><br>` +
+      `Cell pitch: <b>${toDisplay(state.cellW).toFixed(u==='in'?3:2)} × ${toDisplay(state.cellH).toFixed(u==='in'?3:2)} ${u}</b><br>` +
+      `Grid: <b>${state.rows} rows × ${state.cols} cols</b>`;
+  }
+
+  // ---------- selection / typing ----------
+  function moveSelection(dr,dc,wrap){
+    if(!state.selected) { state.selected = {r:0,c:0}; render(); return; }
+    let {r,c} = state.selected;
+    if(wrap && dc > 0){
+      c += dc;
+      if(c >= state.cols){
+        if(r+1 < state.rows){ c = 0; r += 1; } else { c = state.cols-1; }
+      }
+    } else if(wrap && dc < 0){
+      c += dc;
+      if(c < 0){
+        if(r-1 >= 0){ c = state.cols-1; r -= 1; } else { c = 0; }
+      }
+    } else {
+      r += dr; c += dc;
+    }
+    r = Math.max(0, Math.min(state.rows-1, r));
+    c = Math.max(0, Math.min(state.cols-1, c));
+    state.selected = {r,c};
+    render();
+  }
+
+  document.addEventListener('keydown', (e)=>{
+    const active = document.activeElement;
+    if(active && ['INPUT','SELECT','TEXTAREA'].includes(active.tagName)) return;
+    if(e.ctrlKey || e.metaKey || e.altKey) return; // let paste/copy/etc. shortcuts through untouched
+    if(!state.selected) return;
+    const {r,c} = state.selected;
+
+    if(e.key === 'ArrowRight'){ moveSelection(0,1,false); e.preventDefault(); }
+    else if(e.key === 'ArrowLeft'){ moveSelection(0,-1,false); e.preventDefault(); }
+    else if(e.key === 'ArrowDown'){ moveSelection(1,0,false); e.preventDefault(); }
+    else if(e.key === 'ArrowUp'){ moveSelection(-1,0,false); e.preventDefault(); }
+    else if(e.key === 'Tab'){ moveSelection(0,1,true); e.preventDefault(); }
+    else if(e.key === 'Backspace'){
+      if(state.letters[r][c]){ state.letters[r][c]=''; render(); }
+      else { moveSelection(0,-1,true); state.letters[state.selected.r][state.selected.c]=''; render(); }
+      e.preventDefault();
+    }
+    else if(e.key === 'Delete'){ state.letters[r][c]=''; render(); e.preventDefault(); }
+    else if(e.key === 'Escape'){ state.selected = null; render(); }
+    else if(e.key === ' '){ state.letters[r][c]=''; moveSelection(0,1,true); e.preventDefault(); }
+    else if(e.key.length === 1){
+      const ch = sanitizeLetter(e.key);
+      if(ch){
+        state.letters[r][c] = ch;
+        moveSelection(0,1,true);
+        e.preventDefault();
+      }
+    }
+  });
+
+  document.addEventListener('paste', (e)=>{
+    const active = document.activeElement;
+    if(active && ['INPUT','SELECT','TEXTAREA'].includes(active.tagName)) return;
+    const cd = e.clipboardData || window.clipboardData;
+    const text = cd ? cd.getData('text/plain') : '';
+    if(!text) return;
+    e.preventDefault();
+    pasteIntoGrid(text);
+  });
+
+  function pasteIntoGrid(text){
+    let rows = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+    if(rows.length > 1 && rows[rows.length-1] === '') rows.pop(); // trailing blank line from copied selection
+    const grid = rows.map(row => row.split('\t'));
+    if(grid.length === 0) return;
+
+    const anchorR = state.selected ? state.selected.r : 0;
+    const anchorC = state.selected ? state.selected.c : 0;
+
+    let maxRowLen = 0;
+    for(const row of grid){ if(row.length > maxRowLen) maxRowLen = row.length; }
+
+    const neededRows = Math.min(40, anchorR + grid.length);
+    const neededCols = Math.min(40, anchorC + maxRowLen);
+    if(neededRows > state.rows || neededCols > state.cols){
+      resizeGrid(Math.max(state.rows, neededRows), Math.max(state.cols, neededCols));
+      rowsInput.value = state.rows;
+      colsInput.value = state.cols;
+    }
+
+    grid.forEach((rowVals, ri) => {
+      const r = anchorR + ri;
+      if(r >= state.rows) return;
+      rowVals.forEach((val, ci) => {
+        const c = anchorC + ci;
+        if(c >= state.cols) return;
+        state.letters[r][c] = sanitizeLetter((val || '').trim());
+      });
+    });
+
+    state.selected = { r: Math.min(state.rows-1, anchorR), c: Math.min(state.cols-1, anchorC) };
+    render();
+  }
+
+  // ---------- sidebar wiring ----------
+  function resizeGrid(newRows, newCols){
+    const nl = makeEmptyLetters(newRows, newCols);
+    for(let r=0;r<Math.min(newRows,state.rows);r++)
+      for(let c=0;c<Math.min(newCols,state.cols);c++)
+        nl[r][c] = state.letters[r][c];
+    state.letters = nl; state.rows = newRows; state.cols = newCols;
+    if(state.selected && (state.selected.r>=newRows || state.selected.c>=newCols)) state.selected = null;
+  }
+
+  rowsInput.addEventListener('change', ()=>{ resizeGrid(Math.max(1,Math.min(40,+rowsInput.value||1)), state.cols); rowsInput.value=state.rows; render(); });
+  colsInput.addEventListener('change', ()=>{ resizeGrid(state.rows, Math.max(1,Math.min(40,+colsInput.value||1))); colsInput.value=state.cols; render(); });
+
+  cellwInput.addEventListener('input', ()=>{
+    state.cellW = toMM(+cellwInput.value||0.1);
+    if(state.lockSquare){ state.cellH = state.cellW; cellhInput.value = cellwInput.value; }
+    render();
+  });
+  cellhInput.addEventListener('input', ()=>{
+    state.cellH = toMM(+cellhInput.value||0.1);
+    if(state.lockSquare){ state.cellW = state.cellH; cellwInput.value = cellhInput.value; }
+    render();
+  });
+  gapInput.addEventListener('input', ()=>{ state.gap = toMM(+gapInput.value||0); render(); });
+  lockSquare.addEventListener('change', ()=>{ state.lockSquare = lockSquare.checked; if(state.lockSquare){ state.cellH=state.cellW; cellhInput.value=cellwInput.value; render(); } });
+
+  function refreshUnitFields(){
+    cellwInput.value = round(toDisplay(state.cellW));
+    cellhInput.value = round(toDisplay(state.cellH));
+    gapInput.value = round(toDisplay(state.gap));
+    cellwInput.step = state.unit==='in' ? '0.01' : '0.1';
+    cellhInput.step = state.unit==='in' ? '0.01' : '0.1';
+    gapInput.step = state.unit==='in' ? '0.01' : '0.1';
+  }
+  function round(n){ return Math.round(n*1000)/1000; }
+
+  unitMmBtn.addEventListener('click', ()=>{ state.unit='mm'; unitMmBtn.classList.add('active'); unitInBtn.classList.remove('active'); refreshUnitFields(); updateReadout(); });
+  unitInBtn.addEventListener('click', ()=>{ state.unit='in'; unitInBtn.classList.add('active'); unitMmBtn.classList.remove('active'); refreshUnitFields(); updateReadout(); });
+
+  fontSelect.addEventListener('change', ()=>{
+    if(fontSelect.value === 'uploaded' && state.uploadedFont){
+      state.previewSource = 'uploaded';
+    } else {
+      state.previewSource = 'system';
+      const idx = +fontSelect.value;
+      if(SYSTEM_FONTS[idx]) state.fontFamily = SYSTEM_FONTS[idx].css;
+    }
+    render();
+  });
+
+  fontFile.addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    if(typeof opentype === 'undefined'){
+      fontStatus.innerHTML = `<span style="color:#e6796f;">Font engine didn't load (offline, or the CDN was blocked) — reload the page with an internet connection and try again.</span>`;
+      return;
+    }
+    try{
+      const buf = await file.arrayBuffer();
+      const font = opentype.parse(buf);
+      state.uploadedFont = font;
+      state.uploadedFontName = file.name;
+      state.uploadedFontBuffer = buf;
+      state.uploadedFontExt = (file.name.split('.').pop() || 'ttf').toLowerCase();
+      state.previewSource = 'uploaded';
+      removeFontBtn.style.display = 'block';
+      refreshFontSelectOptions();
+      render(); // sets the specific status message itself, based on outline test results
+      saveFontNow();
+    }catch(err){
+      console.warn('Font parse failed:', err);
+      const isWoff2 = /\.woff2$/i.test(file.name);
+      fontStatus.innerHTML = isWoff2
+        ? `<span style="color:#e6796f;">WOFF2 isn't supported by this tool's font parser — export or convert to .ttf/.otf and try again.</span>`
+        : `<span style="color:#e6796f;">Couldn't parse that file (${err.message || 'unknown error'}) — try a .ttf or .otf.</span>`;
+      state.uploadedFont = null;
+      state.uploadedFontBuffer = null;
+      render();
+    }
+  });
+  removeFontBtn.addEventListener('click', ()=>{
+    state.uploadedFont = null; state.uploadedFontName=''; state.uploadedFontBuffer = null; state.uploadedFontExt = '';
+    state.previewSource = 'system';
+    fontStatus.textContent=''; removeFontBtn.style.display='none';
+    fontFile.value = '';
+    refreshFontSelectOptions();
+    render();
+    saveFontNow();
+  });
+
+  fontSizeInput.addEventListener('input', ()=>{ state.fontSizePct = Math.max(10,Math.min(100,+fontSizeInput.value||62)); render(); });
+  baselineInput.addEventListener('input', ()=>{ state.baselinePct = Math.max(0,Math.min(100,+baselineInput.value||28)); render(); });
+
+  showCenters.addEventListener('change', ()=>{ state.showCenters = showCenters.checked; render(); });
+  showBorders.addEventListener('change', ()=>{ state.showBorders = showBorders.checked; render(); });
+  exportCentersChk.addEventListener('change', ()=>{ state.exportCenters = exportCentersChk.checked; });
+  exportBordersChk.addEventListener('change', ()=>{ state.exportBorders = exportBordersChk.checked; });
+  showGridCenterChk.addEventListener('change', ()=>{ state.showGridCenter = showGridCenterChk.checked; render(); });
+  exportGridCenterChk.addEventListener('change', ()=>{ state.exportGridCenter = exportGridCenterChk.checked; });
+  showCornersChk.addEventListener('change', ()=>{ state.showCorners = showCornersChk.checked; render(); });
+  exportCornersChk.addEventListener('change', ()=>{ state.exportCorners = exportCornersChk.checked; });
+
+  // In-app confirmation for destructive actions — avoids window.confirm(),
+  // which sandboxed iframes (like an embedded preview) commonly block silently.
+  function armConfirmButton(button, confirmLabel, onConfirm, timeoutMs=4000){
+    const originalLabel = button.textContent;
+    let armed = false, timer = null;
+    function disarm(){
+      armed = false;
+      clearTimeout(timer);
+      button.textContent = originalLabel;
+      button.classList.remove('btn-confirm-armed');
+    }
+    button.addEventListener('click', ()=>{
+      if(!armed){
+        armed = true;
+        button.textContent = confirmLabel;
+        button.classList.add('btn-confirm-armed');
+        timer = setTimeout(disarm, timeoutMs);
+      } else {
+        disarm();
+        onConfirm();
+      }
+    });
+  }
+
+  armConfirmButton(clearBtn, 'Click again to confirm', ()=>{
+    state.letters = makeEmptyLetters(state.rows, state.cols);
+    render();
+  });
+
+  // ---------- export ----------
+  const EMBEDDED_FONT_FAMILY = 'ReticleUploadedFont';
+
+  function fontMimeAndFormat(ext){
+    if(ext==='otf') return { mime:'font/otf', format:'opentype' };
+    if(ext==='woff') return { mime:'font/woff', format:'woff' };
+    return { mime:'font/ttf', format:'truetype' };
+  }
+
+  function arrayBufferToBase64(buffer){
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const chunk = 0x8000;
+    for(let i=0;i<bytes.length;i+=chunk){
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
+    }
+    return btoa(binary);
+  }
+
+  function buildExportSVG(forceText){
+    const w = totalW(), h = totalH();
+    const s = document.createElementNS(svgNS,'svg');
+    s.setAttribute('xmlns', svgNS);
+    s.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    s.setAttribute('width', w+'mm');
+    s.setAttribute('height', h+'mm');
+
+    // Text-mode export: if a custom font is loaded, embed it directly in the SVG
+    // (as a base64 @font-face) so the exported file actually uses it, rather than
+    // silently falling back to whatever system font happens to be selected.
+    const embedFont = forceText && state.previewSource === 'uploaded' && !!state.uploadedFontBuffer;
+    let textFontFamily;
+    if(embedFont){
+      const { mime, format } = fontMimeAndFormat(state.uploadedFontExt);
+      const b64 = arrayBufferToBase64(state.uploadedFontBuffer);
+      const styleEl = document.createElementNS(svgNS,'style');
+      styleEl.textContent = `@font-face{font-family:'${EMBEDDED_FONT_FAMILY}';src:url(data:${mime};base64,${b64}) format('${format}');}`;
+      const defs = document.createElementNS(svgNS,'defs');
+      defs.appendChild(styleEl);
+      s.appendChild(defs);
+      textFontFamily = `'${EMBEDDED_FONT_FAMILY}'`;
+    }
+
+    if(state.exportBorders) s.appendChild(buildBordersGroup('#999999'));
+    s.appendChild(buildLettersGroup({forceText:forceText, ink:'#000000', textFontFamily}));
+    if(state.exportCenters) s.appendChild(buildCentersGroup('#ff2d55'));
+    if(state.exportGridCenter) s.appendChild(buildGridCenterGroup('#ff2d55'));
+    if(state.exportCorners) s.appendChild(buildCornerGroup('#ff2d55'));
+    return s;
+  }
+
+  function download(svgEl, filename){
+    let source = new XMLSerializer().serializeToString(svgEl);
+    if(!/^<\?xml/.test(source)) source = '<?xml version="1.0" standalone="no"?>\r\n' + source;
+    const blob = new Blob([source], {type:'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  exportOutlineBtn.addEventListener('click', ()=>{
+    if(!state.uploadedFont) return;
+    download(buildExportSVG(false), 'letter-grid-outlines.svg');
+  });
+  exportTextBtn.addEventListener('click', ()=>{
+    download(buildExportSVG(true), 'letter-grid-text.svg');
+  });
+
+  // ---------- init ----------
+  loadPersistedState();
+  sanitizeAllLetters();
+  syncFormControlsFromState();
+  render();
+})();
+</script>
+</body>
+</html>

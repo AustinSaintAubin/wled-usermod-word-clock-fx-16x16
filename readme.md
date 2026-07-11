@@ -34,6 +34,10 @@ own by uploading a file — see [Layouts](#layouts).
 - [Wordclock MK1 - Build Sheet](https://docs.google.com/spreadsheets/d/1UgpLxv2-_UMIiSN81n5ciU93GWFkNPKmxRbwsBQ3MRw/edit?gid=35318254#gid=35318254)
 - [Wordclock MK1 (16x16) - Inventables Easel](https://easel.com/projects/LeV5aEw0NV_JYsKv2mjWpw)
 
+## Tools
+- [Reticle — Letter Grid Layout Tool](./tools/reticle.html)
+  - [The League of Moveable Type - BLACKOUT](https://www.theleagueofmoveabletype.com/blackout)
+
 ## Hardware
 - Controller: Wemos Lolin32 w/ SSD1306 64x128 (its what I had on-hand... recommend newer esp32 controllers)
 - LED Strips: 256x + 4x WS2814 RGBW (GRB)
@@ -46,12 +50,9 @@ own by uploading a file — see [Layouts](#layouts).
 ## Layout
 A 16×16 RGBW LED matrix occupies the center of the display for the word clock functionality. Outside this matrix, each corner contains a dedicated push button and a corresponding addressable RGBW LED on a seperate strip from the 16x16 matrix. (4x discrete RGBW LEDs and 4x push buttons).
 
-
+▶️ [Watch the video demo (YouTube)](https://youtu.be/wZmo6SdLq88)
 ![display](./images/display.jpeg)
 ![display](./images/display-faceoff.jpeg)
-
-▶️ [Watch the video demo (YouTube)](https://youtu.be/wZmo6SdLq88)
-
 
 ### Layout (Words)
 
