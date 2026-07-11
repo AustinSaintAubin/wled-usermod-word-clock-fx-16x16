@@ -101,7 +101,7 @@
     background-size:24px 24px;
   }
   .canvas-inner{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
-  #grid-svg{flex:1 1 auto;min-width:0;min-height:0;width:100%;max-width:100%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(0,0,0,0.45));}
+  #grid-svg{flex:1 1 auto;min-width:0;min-height:0;width:100%;max-width:100%;object-fit:contain;display:block;filter:drop-shadow(0 14px 40px rgba(0,0,0,0.45));overflow:hidden;}
   .hit-rect{fill:transparent;pointer-events:all;cursor:pointer;}
   .selection-rect{pointer-events:none;}
   .caption{flex:none;font-size:11.5px;color:var(--text-faint);text-align:center;max-width:520px;}
@@ -117,7 +117,7 @@
       <h1>RETICLE</h1>
     </div>
     <p class="brand-sub">Letter-grid panel layout. Type letters into a fixed-pitch grid, verify center-to-center spacing, export cut-ready vector outlines.</p>
-    <p class="brand-meta">v1.0 &middot; 2026/07/10 &middot; <a href="mailto:austinsaintaubin@gmail.com" title="Email Austin St. Aubin">Austin St. Aubin</a></p>
+    <p class="brand-meta">v1.1 &middot; 2026/07/11 &middot; <a href="mailto:austinsaintaubin@gmail.com" title="Email Austin St. Aubin">Austin St. Aubin</a></p>
 
     <div class="section">
       <p class="section-label">Grid</p>
@@ -672,11 +672,31 @@
 
   function buildCornerGroup(stroke){
     const g = document.createElementNS(svgNS,'g');
-    const arm = Math.min(state.cellW,state.cellH)*0.55;
-    const sw = Math.min(state.cellW,state.cellH)*0.035;
+    const arm = Math.min(state.cellW,state.cellH)*0.6;
+    const sw = Math.min(state.cellW,state.cellH)*0.05;
     const w = totalW(), h = totalH();
-    [[0,0],[w,0],[0,h],[w,h]].forEach(([x,y])=>{
-      g.appendChild(buildCrosshairMark(x, y, arm, stroke, sw));
+    const o = sw/2; // inset by half the stroke so the line's edge sits exactly on the panel edge
+    // L-shaped bracket at each corner: two lines along the panel edges,
+    // meeting at the true corner point and extending inward.
+    const corners = [
+      {x:o,   y:o,   dx: 1, dy: 1},
+      {x:w-o, y:o,   dx:-1, dy: 1},
+      {x:o,   y:h-o, dx: 1, dy:-1},
+      {x:w-o, y:h-o, dx:-1, dy:-1}
+    ];
+    corners.forEach(({x,y,dx,dy})=>{
+      const hl = document.createElementNS(svgNS,'line');
+      hl.setAttribute('x1',x); hl.setAttribute('y1',y);
+      hl.setAttribute('x2',x+dx*arm); hl.setAttribute('y2',y);
+      const vl = document.createElementNS(svgNS,'line');
+      vl.setAttribute('x1',x); vl.setAttribute('y1',y);
+      vl.setAttribute('x2',x); vl.setAttribute('y2',y+dy*arm);
+      [hl,vl].forEach(l=>{
+        l.setAttribute('stroke',stroke);
+        l.setAttribute('stroke-width',sw);
+        l.setAttribute('stroke-linecap','square');
+        g.appendChild(l);
+      });
     });
     return g;
   }

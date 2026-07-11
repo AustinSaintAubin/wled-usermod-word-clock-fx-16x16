@@ -8,7 +8,7 @@
   "gap": 0,
   "unit": "mm",
   "lockSquare": true,
-  "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif",
+  "fontFamily": "Verdana, Geneva, sans-serif",
   "fontSizePct": 76,
   "baselinePct": 22,
   "showCenters": true,
