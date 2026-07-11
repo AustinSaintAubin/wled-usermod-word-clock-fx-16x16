@@ -170,7 +170,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.6.0` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.6.1` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
@@ -209,8 +209,11 @@ Every word face is a **`wcfx-*.json` file in the root of the WLED filesystem**. 
 dropdown in the usermod settings lists all of them (sorted by each file's `name` field), and the
 selected layout's **name renders as a clickable docs link (`↗`)** next to the dropdown, opening
 the file's `link` URL. The stock faces are
-**seeded at boot if missing** — edit them freely, or delete one to restore the stock version
-on the next reboot:
+**seeded at boot only if missing** — edit them freely; your in-place edits survive firmware
+updates. The flip side: when an update *changes* a stock face (new names, fixed words), the
+copy already on your device is **not** touched — delete the file via `/edit` and reboot, or
+send `{"WordClockFx":{"reseedLayouts":true}}` to the JSON API to rewrite **all** stock files
+from the firmware copies in one shot (user-named layout files are never touched):
 
 | File | Grammar | Notes |
 | ---- | ------- | ----- |
@@ -233,6 +236,8 @@ canonical copies live in [`layouts/`](layouts/), which the firmware embeds at bu
 
 - `name` — dropdown label (falls back to the filename); `link` — optional docs URL shown as
   a clickable link in the settings and on the Info page.
+- `"default": true` — marks the firmware's default/fallback face (repo layouts only; exactly
+  one file may claim it, enforced at build time). Ignored on-device.
 - `width`/`height` — grid size (1–32 each); `grammar` — `"five"` or `"exact"`.
 - `letters` — optional array of row strings (the physical letter grid). The usermod settings
   page renders it as a live preview under the Layout dropdown, dimming filler letters that no

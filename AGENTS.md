@@ -93,8 +93,12 @@ In file order:
   and embeds every file into `layouts/_wcfx_layouts.generated.h` (gitignored — **never edit
   it**, edit the JSON files) as the `WCFX_EMBEDDED[]` {path,json} array. A malformed layout
   fails the build with a clear error. Each entry is seeded to the FS root at boot if missing
-  (delete a file to restore stock); a file dropped into `layouts/` is embedded + seeded
-  automatically on the next build.
+  (delete a file to restore stock, or `reseedLayouts` via JSON API to force-refresh all —
+  seed-if-missing means content changes do NOT propagate to devices on their own); a file
+  dropped into `layouts/` is embedded + seeded automatically on the next build. Exactly one
+  layout carries `"default": true` — the generator turns it into `WCFX_DEFAULT_LAYOUT_FILE`/
+  `_PATH` defines (firmware default face, fallback, and config-migration target; no face
+  filenames are hardcoded in the cpp).
   Two grammar engines (exact-minute / floored 5-minute) drive any layout via
   `wcfxLightRole()`; roles a layout lacks are silent no-ops. Mask is
   `WcfxRow(uint32_t)[WCFX_MAX_H]` (max 32×32). Works in logical X/Y only (serpentine handled by
@@ -151,7 +155,10 @@ In file order:
 ## JSON API
 
 `{"WordClockFx": {…}}` accepts: `"temp": 22.5` (push °C), `"update": true` (fetch now),
-`"wxtest": 1-12` (force weather state; 12 = SEVERE), `"ledtest": N` (light pixel N for 3 s).
+`"wxtest": 1-12` (force weather state; 12 = SEVERE), `"ledtest": N` (light pixel N for 3 s),
+`"reloadLayout": true` (re-read the selected layout file), `"reseedLayouts": true`
+(force-rewrite all stock layout files from the embedded copies, then reload — the escape
+hatch for seed-if-missing staleness; user-named files untouched).
 
 ## Release process
 

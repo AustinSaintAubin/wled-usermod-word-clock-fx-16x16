@@ -10,7 +10,7 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.6.0
+ * Version : 1.6.1
  * Updated : 2026-07-11
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
@@ -40,7 +40,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.6.0"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.6.1"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -92,7 +92,7 @@ struct WcfxLayout {
 // The embedded fallback layout: the 16x16 face if present, else the first entry.
 static PGM_P wcfxFallbackJson() {
   for (unsigned i = 0; i < sizeof(WCFX_EMBEDDED)/sizeof(WCFX_EMBEDDED[0]); i++)
-    if (strcmp(WCFX_EMBEDDED[i].path, "/wcfx-16x16-mk3-until.json") == 0) return WCFX_EMBEDDED[i].json;
+    if (strcmp(WCFX_EMBEDDED[i].path, WCFX_DEFAULT_LAYOUT_PATH) == 0) return WCFX_EMBEDDED[i].json;
   return WCFX_EMBEDDED[0].json;
 }
 
@@ -316,7 +316,7 @@ class WordClockFxUsermod : public Usermod {
     bool everConnected = false;   // first WiFi connect after boot has happened
 
     // Layout selection: a /wcfx-*.json filename in the FS root (stock faces are seeded).
-    String          layoutFile   = "wcfx-16x16-mk3-until.json";
+    String          layoutFile   = WCFX_DEFAULT_LAYOUT_FILE;   // from the "default": true layout
     // Double-buffered layout storage. parseLayoutDoc() builds the new face into the
     // inactive slot, then atomically repoints wcfx_layout at it; the previously-active
     // slot's word table is freed only on the NEXT swap. This is what keeps the effect
@@ -690,11 +690,17 @@ class WordClockFxUsermod : public Usermod {
     }
 
     // Seed the stock layout files if missing (user edits are preserved; delete a
-    // stock file to restore it on the next reboot).
-    static void seedLayoutFile(const char *path, PGM_P json) {
-      if (WLED_FS.exists(path)) return;
+    // stock file — or send {"WordClockFx":{"reseedLayouts":true}} — to restore stock).
+    static void seedLayoutFile(const char *path, PGM_P json, bool force = false) {
+      if (!force && WLED_FS.exists(path)) return;
       File f = WLED_FS.open(path, "w");
       if (f) { f.print(FPSTR(json)); f.close(); }
+    }
+    // Force-rewrite every stock file from the embedded copies (updates propagate;
+    // in-place edits to STOCK files are replaced — user-named layouts are untouched).
+    static void reseedLayoutFiles() {
+      for (unsigned i = 0; i < sizeof(WCFX_EMBEDDED)/sizeof(WCFX_EMBEDDED[0]); i++)
+        seedLayoutFile(WCFX_EMBEDDED[i].path, WCFX_EMBEDDED[i].json, true);
     }
     static void seedLayoutFiles() {
       // Pre-v1.6.0 file migrations (before seeding, so one firmware-managed copy remains):
@@ -902,6 +908,7 @@ class WordClockFxUsermod : public Usermod {
       if (getJsonValue(top[F("wxtest")], n) && n >= 1 && n < WX_COUNT) pendingTest = (uint8_t)n;
       if (getJsonValue(top[F("ledtest")], n) && n >= 0) { testLed = n; testLedUntil = millis() + 3000; }
       if (top[F("reloadLayout")].as<bool>()) applyLayout();   // re-read the layout file without reboot
+      if (top[F("reseedLayouts")].as<bool>()) { reseedLayoutFiles(); applyLayout(); }  // restore stock files
     }
 
     void addToJsonInfo(JsonObject &root) override {
@@ -1032,11 +1039,11 @@ class WordClockFxUsermod : public Usermod {
       // Layout = filename. v1.3.0 stored an int 0/1/2 — migrate (ArduinoJson stringifies
       // stored ints, so the old 1 reads back as "1"); persisted on the next settings save.
       String ls;
-      configComplete &= getJsonValue(top[FPSTR(_layout)],      ls, "wcfx-16x16-mk3-until.json");
-      if      (ls == F("0")) ls = F("wcfx-16x16-mk3-until.json");
+      configComplete &= getJsonValue(top[FPSTR(_layout)],      ls, WCFX_DEFAULT_LAYOUT_FILE);
+      if      (ls == F("0")) ls = F(WCFX_DEFAULT_LAYOUT_FILE);
       else if (ls == F("1")) ls = F("wcfx-11x10.json");
       else if (ls == F("2")) ls = F("wcfx-custom.json");           // was /wordclock.json (renamed at boot)
-      else if (ls == F("wcfx-16x16.json")) ls = F("wcfx-16x16-mk3-until.json");  // pre-MK3 default -> MK3
+      else if (ls == F("wcfx-16x16.json")) ls = F(WCFX_DEFAULT_LAYOUT_FILE);  // pre-MK3 default
       if (ls.length()) layoutFile = ls;
       configComplete &= getJsonValue(top[FPSTR(_showTemp)],    showTemp);
       configComplete &= getJsonValue(top[FPSTR(_fahrenheit)],  tempFahrenheit);

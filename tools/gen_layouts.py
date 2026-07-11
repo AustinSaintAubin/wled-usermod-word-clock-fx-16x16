@@ -83,6 +83,8 @@ files = sorted(glob.glob(os.path.join(LAYOUT_DIR, "*.json")))
 if not files:
     die("no layout files found in %s" % LAYOUT_DIR)
 
+default_file = None  # exactly one layout must carry "default": true
+
 out = [
     "// AUTO-GENERATED from layouts/*.json by gen_layouts.py - DO NOT EDIT.",
     "// Edit the JSON files in layouts/ instead; this header is regenerated at build.",
@@ -104,6 +106,14 @@ for i, path in enumerate(files):
         if key not in doc:
             die("layouts/%s is missing required key '%s'" % (name, key))
     validate(name, doc)
+    if "default" in doc:
+        if not isinstance(doc["default"], bool):
+            die("layouts/%s: 'default' must be true/false (got %r)" % (name, doc["default"]))
+        if doc["default"]:
+            if default_file is not None:
+                die('both layouts/%s and layouts/%s claim "default": true - only one layout may'
+                    % (default_file, name))
+            default_file = name
     var = "WCFX_EMBEDDED_JSON_%d" % i
     out.append("// layouts/%s" % name)
     out.append("static const char %s[] PROGMEM =" % var)
@@ -120,6 +130,14 @@ for i, path in enumerate(files):
 out.append("static const WcfxEmbeddedLayout WCFX_EMBEDDED[] = {")
 out.extend(entries)
 out.append("};")
+out.append("")
+
+if default_file is None:
+    die('no layout claims "default": true - mark exactly one (it becomes the firmware '
+        "default face, fallback, and config-migration target)")
+out.append('// The layout marked "default": true - firmware default face + fallback.')
+out.append('#define WCFX_DEFAULT_LAYOUT_FILE "%s"' % default_file)
+out.append('#define WCFX_DEFAULT_LAYOUT_PATH "/%s"' % default_file)
 out.append("")
 content = "\n".join(out)
 
