@@ -35,7 +35,7 @@ own by uploading a file — see [Layouts](#layouts).
 - [Wordclock MK1 (16x16) - Inventables Easel](https://easel.com/projects/LeV5aEw0NV_JYsKv2mjWpw)
 
 ## Tools
-- [Reticle — Letter Grid Layout Tool](./tools/reticle.html)
+- [Reticle - Letter Grid Layout Tool](./tools/reticle.html) ([Live Preview](https://htmlpreview.github.io/?https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16/blob/main/tools/reticle.html))
   - [The League of Moveable Type - BLACKOUT](https://www.theleagueofmoveabletype.com/blackout)
 
 ## Hardware
