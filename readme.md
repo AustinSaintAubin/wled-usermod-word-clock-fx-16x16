@@ -10,9 +10,10 @@ It shows the time in English with **exact-minute** phrasing plus the period of d
 `IT IS TWENTY ONE MINUTES PAST SEVEN IN THE EVENING`.
 
 Word **layouts are JSON files** (`wcfx-*.json`) on the WLED filesystem, selectable in the
-usermod settings. Two stock faces ship built in — the original **16×16 exact-minute**
-(default) and the **11×10 "WordClock 2022"** with 5-minute phrasing — and you can add your
-own by uploading a file — see [Layouts](#layouts).
+usermod settings. Four stock faces ship built in — the machine-validated **16×16 MK3**
+in two connector variants (*until*/*to*, default: *until*), the original **16×16 MK1**,
+and the **11×10 "WordClock 2022"** with 5-minute phrasing — and you can add your own by
+uploading a file — see [Layouts](#layouts).
 
 > **Note:** this usermod (code, settings UI, and docs) was developed with **AI assistance**
 > and validated by building against WLED. Review before use and verify on your own hardware.
@@ -55,7 +56,7 @@ A 16×16 RGBW LED matrix occupies the center of the display for the word clock f
 ![display](./images/display.jpeg)
 ![display](./images/display-faceoff.jpeg)
 
-### Layout (Words)
+### Layout MK1/MK2 (Words)
 
 |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - |
@@ -75,6 +76,43 @@ A 16×16 RGBW LED matrix occupies the center of the display for the word clock f
 | A | F | T | E | R | N | O | O | N | M | O | R | N | I | N | G |
 | A | T | K | N | I | G | H | T | Z | E | V | E | N | I | N | G |
 | & | W | A | R | M | C | O | O | L | H | O | T | C | O | L | D |
+
+### Layout MK3 (Words)
+
+The MK3 face is a machine-validated redesign of the MK1/MK2 layout with a **dual
+connector**: both UNTIL and TO are printed on the panel, and two otherwise-identical
+layout files let you switch phrasing from the Layout dropdown — no reflash, no new
+faceplate. It supports both period-of-day display modes (MORNING/AFTERNOON/EVENING/AT
+NIGHT words **and** AM/PM tiles) plus the full temperature scale (`& COLD / COOL / WARM
+/ HOT`). Every one of the 1,440 minutes of the day is verified programmatically for word
+coverage, strict reading order, and lit-word separation
+([`tools/wcfx_validate_run.py`](tools/wcfx_validate_run.py)). Letter economy comes from
+shared-letter chains (`FIVELEVEN`, `EIGHTEN`, `SEVENINE`, `TWONE`) and embedded words
+(FOUR inside FOURTEEN and the like); MIDNIGHT sits below the connectors, and the MK2
+`UNTILL` typo is gone. The dark letters are not random — the panel hides KISS, PASTIMES,
+ACQUARTER, ENDURE, `UNTIL TO TOO`, `OCLOCK WIND THE CAT`, the designer's initials, and a
+reserved **IT IS DONE** phrase awaiting a future firmware role (full list in
+[`layouts/wcfx-16x16-mk3-handoff.md`](layouts/wcfx-16x16-mk3-handoff.md)).
+
+|   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |   |
+| - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - |
+| I | T | K | I | S | S | T | W | E | N | T | Y | D | O | N | E |
+| T | H | I | R | T | E | E | N | F | O | U | R | T | E | E | N |
+| S | I | X | T | E | E | N | N | I | N | E | T | E | E | N | D |
+| S | E | V | E | N | T | E | E | N | E | L | E | V | E | N | U |
+| E | I | G | H | T | E | E | N | T | W | O | F | I | V | E | R |
+| T | W | E | L | V | E | T | E | N | T | H | R | E | E | B | E |
+| A | C | Q | U | A | R | T | E | R | H | A | L | F | A | S | A |
+| M | I | N | U | T | E | S | O | P | A | S | T | I | M | E | S |
+| U | N | T | I | L | B | T | O | O | F | O | U | R | S | I | X |
+| F | I | V | E | L | E | V | E | N | E | I | G | H | T | E | N |
+| S | E | V | E | N | I | N | E | M | I | D | N | I | G | H | T |
+| T | W | E | L | V | E | T | H | R | E | E | T | W | O | N | E |
+| O | C | L | O | C | K | W | I | N | D | T | H | E | C | A | T |
+| N | I | G | H | T | A | M | P | M | M | O | R | N | I | N | G |
+| A | F | T | E | R | N | O | O | N | E | V | E | N | I | N | G |
+| & | C | O | L | D | C | O | O | L | W | A | R | M | H | O | T |
+
 
 ### Layout (LED IDs)
 > NOTE: 16x16, serpentine.
@@ -132,7 +170,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.5.5` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.6.0` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
@@ -170,13 +208,15 @@ An example preset set [`examples/wled_presets.example.json`](examples/wled_prese
 Every word face is a **`wcfx-*.json` file in the root of the WLED filesystem**. The **Layout**
 dropdown in the usermod settings lists all of them (sorted by each file's `name` field), and the
 selected layout's **name renders as a clickable docs link (`↗`)** next to the dropdown, opening
-the file's `link` URL. The two stock faces are
+the file's `link` URL. The stock faces are
 **seeded at boot if missing** — edit them freely, or delete one to restore the stock version
 on the next reboot:
 
 | File | Grammar | Notes |
 | ---- | ------- | ----- |
-| `wcfx-16x16.json` (default) | exact minute | The original MK2 face documented above; period-of-day + temperature words. |
+| `wcfx-16x16-mk3-until.json` (default) | exact minute | The MK3 face with UNTIL phrasing ("TEN MINUTES UNTIL EIGHT"). Period words + AM/PM tiles + temperature words. |
+| `wcfx-16x16-mk3-to.json` | exact minute | The same MK3 panel with TO phrasing ("TEN MINUTES TO EIGHT") — both connectors are printed on the face, so **picking the file picks the phrasing**. |
+| `wcfx-16x16-mk1.json` | exact minute | The original MK1/MK2 face documented above; period-of-day + temperature words. |
 | `wcfx-11x10.json` | 5-minute steps | The popular [WordClock 2022](https://www.printables.com/model/311949-wordclock-2022) face; AM/PM tiles (shown when `showPeriodOfDay` is on). |
 
 **Add your own face**: upload any `wcfx-<something>.json` via the `/edit` page (like

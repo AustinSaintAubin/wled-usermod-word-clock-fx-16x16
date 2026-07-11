@@ -6,8 +6,10 @@ Operational knowledge for AI agents / contributors working in this repo. End-use
 ## What this is
 
 An **out-of-tree WLED community usermod**: a first-class WLED Effect ("Word Clock FX") for
-RGBW matrix word clocks. Layouts are `/wcfx-*.json` files on the WLED FS (stock 16×16
-exact-minute + 11×10 "WordClock 2022" seeded at boot; users add their own via `/edit`),
+RGBW matrix word clocks. Layouts are `/wcfx-*.json` files on the WLED FS (stock faces
+seeded at boot: 16×16 MK3 in until/to connector variants — the panel prints both, so the
+file choice IS the phrasing; default mk3-until — plus 16×16 MK1 and the 11×10
+"WordClock 2022"; users add their own via `/edit`),
 selected by a settings dropdown built from a FS scan. Plus period-of-day / AM-PM and
 temperature words, an optional Open-Meteo weather client (weather → preset switching),
 corner-button → LED feedback and corner-LED minute dots. **All code lives in one file:
@@ -85,7 +87,7 @@ In file order:
 - **Layouts + `wcfxBuildMask()`** — a layout (`WcfxLayout`) = dims + grammar id + a role-tagged
   word table (`WcfxLayoutWord {role,x,y,len}`, roles in `WcfxRole`: WR_IT…WR_HOT, WR_M1..M20/M25,
   WR_H1..H12, WR_MIDNIGHT — the optional MIDNIGHT tile shown for TWELVE at/around 00:00). **`layouts/*.json` is the single source of truth for stock faces**:
-  `layouts/gen_layouts.py` (wired as `library.json` → `"build":{"extraScript":...}`, run
+  `tools/gen_layouts.py` (wired as `library.json` → `"build":{"extraScript":...}`, run
   automatically by PlatformIO before compiling; also runs standalone) validates each file
   (JSON + structural: word `[role,x,y,len]` bounds, and `letters` grid matching width/height)
   and embeds every file into `layouts/_wcfx_layouts.generated.h` (gitignored — **never edit
@@ -104,7 +106,7 @@ In file order:
 - **Layout loading** — every layout is parsed from JSON into a heap table:
   `loadLayoutFile()`/`loadLayoutFlash()` → `parseLayoutDoc()` (own `DynamicJsonDocument(8192)` —
   **8k, the 16×16 file overflows 4k**; never WLED's pinned doc). Fallback chain: selected file →
-  embedded fallback (`wcfxFallbackJson()`: the 16×16 entry, else the first) → `WCFX_LAYOUT_EMPTY`. `parseLayoutDoc` repoints `wcfx_layout` to a safe layout
+  embedded fallback (`wcfxFallbackJson()`: the default mk3-until entry, else the first) → `WCFX_LAYOUT_EMPTY`. `parseLayoutDoc` repoints `wcfx_layout` to a safe layout
   **before** freeing the old table (settings saves run in async_tcp while the effect renders);
   on validation failure the active layout is left untouched. Schema: `"name"` (dropdown label),
   `"link"` (docs URL), `"width"`/`"height"` (short `w`/`h` accepted), `"grammar"`, `"words"`

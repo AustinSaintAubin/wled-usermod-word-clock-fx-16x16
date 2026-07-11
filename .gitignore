@@ -1,4 +1,4 @@
-# PlatformIO / build artifacts
+# PlatformIO / build 
 layouts/_wcfx_layouts.generated.h
 .pio/
 .pioenvs/
@@ -8,3 +8,6 @@ layouts/_wcfx_layouts.generated.h
 .vscode/
 .DS_Store
 *.swp
+
+# Python artifacts
+*/__pycache__/*

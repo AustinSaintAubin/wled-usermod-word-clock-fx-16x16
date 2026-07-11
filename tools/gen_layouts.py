@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Embed layouts/*.json into _wcfx_layouts.generated.h (single source of truth).
+"""Embed layouts/*.json into layouts/_wcfx_layouts.generated.h (single source of truth).
 
-This script and the generated header both live in layouts/, alongside the JSON
-faces they embed. Runs two ways:
+This script lives in tools/; the JSON faces and the generated header live in the
+sibling layouts/ directory. Runs two ways:
 - As a PlatformIO library extraScript (declared in library.json "build" as
-  "layouts/gen_layouts.py") — PIO executes it as an SConscript before compiling
+  "tools/gen_layouts.py") — PIO executes it as an SConscript before compiling
   the usermod, so the header is always regenerated from the layout files, for
   both symlink dev checkouts and git-fetched custom_usermods copies.
-- Standalone: `python3 layouts/gen_layouts.py` (used by the host test harness).
+- Standalone: `python3 tools/gen_layouts.py` (used by the host test harness).
 
 A malformed layout file fails the build with a clear error (both invalid JSON and
 structurally invalid words/letters). The header is only rewritten when its content
@@ -23,14 +23,16 @@ try:  # SCons/PlatformIO context (extraScript); harmless when standalone
 except Exception:
     pass
 
-try:  # this file lives in layouts/, so its own dir IS the layout dir
-    LAYOUT_DIR = os.path.dirname(os.path.abspath(__file__))
+try:  # this file lives in tools/, a sibling of layouts/
+    _here = os.path.dirname(os.path.abspath(__file__))
 except NameError:
     # SCons exec's this file without __file__. PlatformIO chdir's to the extraScript's
-    # directory (this layouts/ folder); older/other setups may leave cwd at the lib root.
-    # Handle both: use cwd if it's already layouts/, else descend into it.
-    _cwd = os.getcwd()
-    LAYOUT_DIR = _cwd if os.path.basename(_cwd) == "layouts" else os.path.join(_cwd, "layouts")
+    # directory (this tools/ folder); older/other setups may leave cwd at the lib root.
+    _here = os.getcwd()
+if os.path.basename(_here) in ("tools", "layouts"):
+    LAYOUT_DIR = os.path.join(os.path.dirname(_here), "layouts")
+else:  # lib root
+    LAYOUT_DIR = os.path.join(_here, "layouts")
 OUT = os.path.join(LAYOUT_DIR, "_wcfx_layouts.generated.h")
 
 WCFX_MAX_W = 32
