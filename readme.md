@@ -51,6 +51,7 @@ own by uploading a file — see [Layouts](#layouts).
 A 16×16 RGBW LED matrix occupies the center of the display for the word clock functionality. Outside this matrix, each corner contains a dedicated push button and a corresponding addressable RGBW LED on a seperate strip from the 16x16 matrix. (4x discrete RGBW LEDs and 4x push buttons).
 
 ▶️ [Watch the video demo (YouTube)](https://youtu.be/wZmo6SdLq88)
+
 ![display](./images/display.jpeg)
 ![display](./images/display-faceoff.jpeg)
 
