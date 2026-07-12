@@ -73,6 +73,10 @@ If the existing `platformio_override.ini` is unrecognizable, don't guess — reb
 from the sample above, or ask the user.
 
 Gotchas:
+- Every build runs `tools/gen_layouts.py` (library.json `extraScript`): embeds + structurally
+  validates `layouts/*.json`. The deep 1,440-minute face validator is **manual by default** —
+  `python3 tools/wcfx_validate_run.py` after ANY layout edit — or opt-in per build via
+  `custom_wcfx_validate = true` in the override (or `WCFX_VALIDATE=1` in the env).
 - PlatformIO **caches** the git-fetched mod. After pushing to `main`, force a re-pull with
   `rm -rf ../WLED/.pio/libdeps/*/wled-usermod-word-clock-fx-16x16` before rebuilding.
 - Flashing the device: `pio run -d ../WLED -e esp32dev_wordclock_16x16_ota -t upload`

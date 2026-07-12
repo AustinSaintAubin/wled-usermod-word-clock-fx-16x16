@@ -18,8 +18,10 @@ import json
 import os
 import sys
 
+_env = None
 try:  # SCons/PlatformIO context (extraScript); harmless when standalone
     Import("env")  # noqa: F821  (SCons builtin)
+    _env = env     # noqa: F821
 except Exception:
     pass
 
@@ -149,3 +151,19 @@ if old != content:
     with open(OUT, "w") as f:
         f.write(content)
     print("gen_layouts.py: wrote %s (%d layouts)" % (os.path.basename(OUT), len(files)))
+
+# Opt-in deep validation (the 1,440-minute face validator, manual by default).
+# Enable per build with the env var WCFX_VALIDATE=1, or persistently in
+# platformio_override.ini with:  custom_wcfx_validate = true
+_want = os.environ.get("WCFX_VALIDATE", "")
+if not _want and _env is not None:
+    try:
+        _want = _env.GetProjectOption("custom_wcfx_validate", "")
+    except Exception:
+        _want = ""
+if str(_want).strip().lower() in ("1", "true", "yes", "on"):
+    import subprocess
+    runner = os.path.join(os.path.dirname(LAYOUT_DIR), "tools", "wcfx_validate_run.py")
+    print("gen_layouts.py: running face validator (opt-in)...")
+    if subprocess.call([sys.executable, runner]) != 0:
+        die("face validation failed (see report above)")

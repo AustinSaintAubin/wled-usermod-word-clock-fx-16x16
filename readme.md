@@ -38,6 +38,12 @@ uploading a file — see [Layouts](#layouts).
 ## Tools
 - [Reticle - Letter Grid Layout Tool](./tools/reticle.html) ([Live Preview](https://htmlpreview.github.io/?https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16/blob/main/tools/reticle.html))
   - [The League of Moveable Type - BLACKOUT](https://www.theleagueofmoveabletype.com/blackout)
+- Face validator — `python3 tools/wcfx_validate_run.py` checks every 16×16 exact-minute
+  face across all 1,440 minutes (word coverage, spelling, reading order, separation).
+  Run it after any layout edit; to run it automatically on every firmware build, set
+  `custom_wcfx_validate = true` in your `platformio_override.ini` (or one-off:
+  `WCFX_VALIDATE=1 pio run ...`). Structural checks (bounds/schema) always run at build
+  via `tools/gen_layouts.py`.
 
 ## Hardware
 - Controller: Wemos Lolin32 w/ SSD1306 64x128 (its what I had on-hand... recommend newer esp32 controllers)
@@ -170,7 +176,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.6.1` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.6.2` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).
