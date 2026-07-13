@@ -176,7 +176,7 @@ default `USERMOD_ID_UNSPECIFIED`.) See the WLED docs:
    custom_usermods = https://github.com/AustinSaintAubin/wled-usermod-word-clock-fx-16x16.git#main
    ```
    PlatformIO fetches it automatically — no manual copy and no git submodule needed. The `wled-`
-   library name is auto-recognized as a usermod. Pin a release with `#v1.6.2` instead of `#main`
+   library name is auto-recognized as a usermod. Pin a release with `#v1.6.3` instead of `#main`
    if you prefer a fixed version. For local development you can instead point at a checkout:
    `custom_usermods = symlink:///absolute/path/to/wled-usermod-word-clock-fx-16x16`.
 3. Build & flash for your ESP32 (Wemos Lolin32).

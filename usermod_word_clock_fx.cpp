@@ -10,8 +10,8 @@
 /*
  * Word Clock FX - RGBW matrix word clock as a WLED Effect (English, selectable layouts).
  *
- * Version : 1.6.2
- * Updated : 2026-07-11
+ * Version : 1.6.3
+ * Updated : 2026-07-13
  * Author  : Austin St. Aubin <austinsaintaubin@gmail.com>
  * Note    : Developed with AI assistance; validated by building against WLED.
  *
@@ -40,7 +40,7 @@
  * Temperature can also be pushed via the JSON API ({"WordClockFx":{"temp":N}}).
  */
 
-#define WCFX_VERSION "1.6.2"   // usermod_word_clock_fx
+#define WCFX_VERSION "1.6.3"   // usermod_word_clock_fx
 
 // ---- Layouts --------------------------------------------------------------------
 // A layout = grid dimensions + grammar style + a role-tagged word table. A word is a
@@ -1131,6 +1131,14 @@ class WordClockFxUsermod : public Usermod {
       oappend(F("wcfxledTest=function(tr,cells){var td=document.createElement('td');var b=document.createElement('button');b.type='button';b.textContent='Test';"
                 "var cell=cells[1];b.onclick=function(){var ip=cell.querySelector(\"input:not([type='hidden'])\");var v=ip?ip.value:'';if(v==='')return;"
                 "fetch('/json/state',{method:'POST',headers:{'Content-Type':'application/json'},body:'{\"WordClockFx\":{\"ledtest\":'+v+'}}'});};td.appendChild(b);tr.appendChild(td);};"));
+      // Version badge in the usermod's <h3> heading (WCFX_VERSION via literal concat,
+      // so it can never drift). Anchor: first field -> enclosing div.sec -> its h3.
+      oappend(F("(function(){var a=d.getElementsByName('WordClockFx:enabled');if(!a.length)return;"
+                "var s=a[a.length-1];while(s&&!(s.tagName=='DIV'&&s.className=='sec'))s=s.parentNode;"
+                "var h=s?s.querySelector('h3'):null;if(!h)return;"
+                "var v=document.createElement('span');v.textContent='v" WCFX_VERSION "';"
+                "v.style.cssText='font-size:12px;font-weight:400;opacity:.6;margin-left:8px';"
+                "h.appendChild(v);})();"));
       oappend(F("wcfxsec('enabled','Display');wcfxsec('showTemperature','Temperature Words');"
                 "wcfxsec('fetchWeather','Weather');wcfxsec('useWledLocation','Location');"
                 "wcfxsec('weatherPresets','Weather \\u2192 Presets');"));
