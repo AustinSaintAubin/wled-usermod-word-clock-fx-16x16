@@ -1,0 +1,260 @@
+{
+    "mainseg": 0,
+    "seg": [
+        {
+            "bm": 0,
+            "bri": 255,
+            "c1": 128,
+            "c2": 128,
+            "c3": 16,
+            "cct": 127,
+            "col": [
+                [
+                    255,
+                    160,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    0
+                ]
+            ],
+            "frz": false,
+            "fx": 142,
+            "grp": 1,
+            "id": 0,
+            "ix": 0,
+            "lc": 7,
+            "m12": 0,
+            "mi": false,
+            "mY": false,
+            "n": "Matrix",
+            "o1": false,
+            "o2": false,
+            "o3": false,
+            "of": 0,
+            "on": true,
+            "pal": 0,
+            "rev": false,
+            "rY": false,
+            "sel": true,
+            "set": 0,
+            "si": 0,
+            "spc": 0,
+            "start": 0,
+            "startY": 0,
+            "stop": 16,
+            "stopY": 16,
+            "sx": 128,
+            "tp": false
+        },
+        {
+            "bm": 0,
+            "bri": 255,
+            "c1": 128,
+            "c2": 128,
+            "c3": 16,
+            "cct": 127,
+            "col": [
+                [
+                    255,
+                    160,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    0
+                ]
+            ],
+            "frz": false,
+            "fx": 142,
+            "grp": 1,
+            "id": 1,
+            "ix": 0,
+            "lc": 7,
+            "m12": 0,
+            "mi": false,
+            "mY": false,
+            "n": "Corners",
+            "o1": false,
+            "o2": false,
+            "o3": false,
+            "of": 0,
+            "on": false,
+            "pal": 0,
+            "rev": false,
+            "rY": false,
+            "sel": false,
+            "set": 0,
+            "si": 0,
+            "spc": 0,
+            "start": 256,
+            "startY": 0,
+            "stop": 260,
+            "stopY": 1,
+            "sx": 128,
+            "tp": false
+        },
+        {
+            "bm": 0,
+            "bri": 255,
+            "c1": 128,
+            "c2": 128,
+            "c3": 16,
+            "cct": 127,
+            "col": [
+                [
+                    255,
+                    71,
+                    175,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0,
+                    0
+                ]
+            ],
+            "frz": false,
+            "fx": 88,
+            "grp": 1,
+            "id": 2,
+            "ix": 224,
+            "lc": 7,
+            "m12": 0,
+            "mi": false,
+            "mY": false,
+            "n": "Overlay",
+            "o1": false,
+            "o2": false,
+            "o3": false,
+            "of": 0,
+            "on": false,
+            "pal": 0,
+            "rev": false,
+            "rY": false,
+            "sel": false,
+            "set": 0,
+            "si": 0,
+            "spc": 0,
+            "start": 0,
+            "startY": 0,
+            "stop": 16,
+            "stopY": 16,
+            "sx": 96,
+            "tp": false
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        },
+        {
+            "stop": 0
+        }
+    ]
+}

@@ -1,9 +1,9 @@
 {
     "0": {},
     "1": {
-        "mainseg": 0,
+        "mainseg": 2,
         "n": "Wordclock",
-        "ql": "wc",
+        "ql": "🏠",
         "seg": [
             {
                 "bm": 0,
@@ -37,7 +37,7 @@
                 "grp": 1,
                 "id": 0,
                 "ix": 0,
-                "lc": 3,
+                "lc": 7,
                 "m12": 0,
                 "mi": false,
                 "mY": false,
@@ -50,7 +50,7 @@
                 "pal": 0,
                 "rev": false,
                 "rY": false,
-                "sel": true,
+                "sel": false,
                 "set": 0,
                 "si": 0,
                 "spc": 0,
@@ -93,7 +93,7 @@
                 "grp": 1,
                 "id": 1,
                 "ix": 0,
-                "lc": 3,
+                "lc": 7,
                 "m12": 0,
                 "mi": false,
                 "mY": false,
@@ -104,6 +104,952 @@
                 "of": 0,
                 "on": false,
                 "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 256,
+                "startY": 0,
+                "stop": 260,
+                "stopY": 1,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "bm": 10,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 88,
+                "grp": 1,
+                "id": 2,
+                "ix": 224,
+                "lc": 7,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Overlay",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": false,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": true,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 96,
+                "tp": false
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            }
+        ]
+    },
+    "101": {
+        "mainseg": 0,
+        "n": "Matrix",
+        "seg": [
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 70,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        160,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 153,
+                "grp": 1,
+                "id": 0,
+                "ix": 255,
+                "lc": 7,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Matrix",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 145,
+                "tp": false
+            },
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        14,
+                        190,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 88,
+                "grp": 1,
+                "id": 1,
+                "ix": 171,
+                "lc": 7,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Corners",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": false,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 256,
+                "startY": 0,
+                "stop": 260,
+                "stopY": 1,
+                "sx": 96,
+                "tp": false
+            },
+            {
+                "bm": 10,
+                "bri": 255,
+                "c1": 70,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        153,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 153,
+                "grp": 1,
+                "id": 2,
+                "ix": 255,
+                "lc": 7,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Overlay",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": false,
+                "pal": 35,
+                "rev": false,
+                "rY": false,
+                "sel": true,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 145,
+                "tp": false
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            }
+        ]
+    },
+    "121": {
+        "bri": 255,
+        "bs": 0,
+        "mainseg": 0,
+        "n": "IMG Cat Black",
+        "on": true,
+        "seg": [
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        160,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 53,
+                "grp": 1,
+                "id": 0,
+                "ix": 0,
+                "lc": 3,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "img-cat-black.gif",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": true,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "bm": 0,
+                "bri": 52,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 157,
+                "grp": 1,
+                "id": 1,
+                "ix": 128,
+                "lc": 3,
+                "m12": 3,
+                "mi": false,
+                "mY": false,
+                "n": "Corners",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 11,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 256,
+                "startY": 0,
+                "stop": 260,
+                "stopY": 1,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            }
+        ],
+        "transition": 18
+    },
+    "122": {
+        "bri": 255,
+        "bs": 0,
+        "mainseg": 0,
+        "n": "IMG Cat Nyan",
+        "on": true,
+        "seg": [
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        160,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 53,
+                "grp": 1,
+                "id": 0,
+                "ix": 0,
+                "lc": 3,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "img-cat-nyan.gif",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": true,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "bm": 0,
+                "bri": 33,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        59,
+                        98,
+                        255,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 142,
+                "grp": 1,
+                "id": 1,
+                "ix": 0,
+                "lc": 3,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Corners",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 256,
+                "startY": 0,
+                "stop": 260,
+                "stopY": 1,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            }
+        ],
+        "transition": 18
+    },
+    "123": {
+        "mainseg": 0,
+        "n": "IMG Zombie",
+        "seg": [
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        160,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 53,
+                "grp": 1,
+                "id": 0,
+                "ix": 0,
+                "lc": 3,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "img-zombies.gif",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": true,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 0,
+                "grp": 1,
+                "id": 1,
+                "ix": 128,
+                "lc": 3,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Corners",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": false,
+                "pal": 11,
                 "rev": false,
                 "rY": false,
                 "sel": false,
@@ -209,47 +1155,10 @@
             }
         ]
     },
-    "100": {
+    "124": {
         "mainseg": 0,
-        "n": "Matrix",
-        "ql": "mx",
+        "n": "Zombie DNA",
         "seg": [
-            {
-                "bm": 0,
-                "bri": 255,
-                "c1": 70,
-                "c2": 128,
-                "c3": 16,
-                "cct": 127,
-                "frz": false,
-                "fx": 153,
-                "grp": 1,
-                "id": 0,
-                "ix": 255,
-                "lc": 3,
-                "m12": 0,
-                "mi": false,
-                "mY": false,
-                "n": "",
-                "o1": false,
-                "o2": false,
-                "o3": false,
-                "of": 0,
-                "on": true,
-                "pal": 0,
-                "rev": false,
-                "rY": false,
-                "sel": true,
-                "set": 0,
-                "si": 0,
-                "spc": 0,
-                "start": 0,
-                "startY": 0,
-                "stop": 16,
-                "stopY": 16,
-                "sx": 145,
-                "tp": false
-            },
             {
                 "bm": 0,
                 "bri": 255,
@@ -259,8 +1168,8 @@
                 "cct": 127,
                 "col": [
                     [
-                        14,
-                        190,
+                        255,
+                        160,
                         0,
                         0
                     ],
@@ -278,21 +1187,77 @@
                     ]
                 ],
                 "frz": false,
-                "fx": 88,
+                "fx": 152,
                 "grp": 1,
-                "id": 1,
-                "ix": 171,
+                "id": 0,
+                "ix": 0,
                 "lc": 3,
                 "m12": 0,
                 "mi": false,
                 "mY": false,
-                "n": "",
+                "n": "Matrix",
                 "o1": false,
                 "o2": false,
                 "o3": false,
                 "of": 0,
                 "on": true,
-                "pal": 0,
+                "pal": 29,
+                "rev": false,
+                "rY": false,
+                "sel": true,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 0,
+                "grp": 1,
+                "id": 1,
+                "ix": 128,
+                "lc": 3,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Corners",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": false,
+                "pal": 11,
                 "rev": false,
                 "rY": false,
                 "sel": false,
@@ -303,11 +1268,64 @@
                 "startY": 0,
                 "stop": 260,
                 "stopY": 1,
-                "sx": 96,
+                "sx": 128,
                 "tp": false
             },
             {
-                "stop": 0
+                "bm": 2,
+                "bri": 7,
+                "c1": 0,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        0,
+                        0,
+                        255,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 182,
+                "grp": 1,
+                "id": 2,
+                "ix": 128,
+                "lc": 3,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Overlay",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 29,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 128,
+                "tp": false
             },
             {
                 "stop": 0
@@ -640,7 +1658,7 @@
         ]
     },
     "20": {
-        "mainseg": 3,
+        "mainseg": 2,
         "n": "Word: KISS",
         "seg": [
             {
@@ -653,7 +1671,7 @@
                 "col": [
                     [
                         255,
-                        0,
+                        160,
                         0,
                         0
                     ],
@@ -671,11 +1689,123 @@
                     ]
                 ],
                 "frz": false,
-                "fx": 88,
+                "fx": 142,
                 "grp": 1,
-                "id": 3,
-                "ix": 224,
-                "lc": 3,
+                "id": 0,
+                "ix": 0,
+                "lc": 7,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Matrix",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        160,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 142,
+                "grp": 1,
+                "id": 1,
+                "ix": 0,
+                "lc": 7,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Corners",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": false,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 256,
+                "startY": 0,
+                "stop": 260,
+                "stopY": 1,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        71,
+                        175,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 28,
+                "grp": 1,
+                "id": 2,
+                "ix": 128,
+                "lc": 7,
                 "m12": 0,
                 "mi": false,
                 "mY": false,
@@ -696,49 +1826,183 @@
                 "startY": 0,
                 "stop": 6,
                 "stopY": 1,
-                "sx": 96,
+                "sx": 128,
                 "tp": false
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
             }
         ]
     },
-    "250": {
-        "n": "DEMO",
+    "221": {
+        "n": "PLAY IMG Cat Black",
         "on": true,
         "playlist": {
             "dur": [
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50,
-                50
+                300,
+                18
             ],
-            "end": 1,
+            "end": 255,
             "ps": [
-                100,
+                121,
+                241
+            ],
+            "r": 0,
+            "repeat": 1,
+            "transition": [
+                18,
+                18
+            ]
+        },
+        "ql": "🐱"
+    },
+    "222": {
+        "n": "PLAY IMG Cat Nyan",
+        "on": true,
+        "playlist": {
+            "dur": [
+                300,
+                1
+            ],
+            "end": 255,
+            "ps": [
+                122,
+                241
+            ],
+            "r": 0,
+            "repeat": 1,
+            "transition": [
+                18,
+                1
+            ]
+        },
+        "ql": "😻"
+    },
+    "223": {
+        "n": "PLAY IMG Zombie",
+        "on": true,
+        "playlist": {
+            "dur": [
+                30,
+                33,
+                11
+            ],
+            "end": 255,
+            "ps": [
+                124,
+                123,
+                241
+            ],
+            "r": 0,
+            "repeat": 1,
+            "transition": [
+                10,
+                1,
+                1
+            ]
+        },
+        "ql": "🧟"
+    },
+    "229": {
+        "n": "PLAY Matrix",
+        "on": true,
+        "playlist": {
+            "dur": [
+                30,
+                80,
+                80,
+                18
+            ],
+            "end": 255,
+            "ps": [
+                245,
+                101,
                 2,
-                3,
-                5,
-                4,
-                48,
-                47,
-                42,
-                41,
-                46,
-                49,
-                44,
-                45,
-                50,
-                20
+                1
             ],
             "r": 0,
             "repeat": 1,
@@ -746,23 +2010,487 @@
                 18,
                 18,
                 18,
-                18,
-                18,
-                18,
-                18,
-                18,
-                18,
-                18,
-                18,
-                18,
-                18,
-                18,
                 18
             ]
-        }
+        },
+        "ql": "🖥"
+    },
+    "240": {
+        "AutoBri": {
+            "on": true,
+            "resetOffset": true
+        },
+        "n": "Brightness (AUTO)",
+        "ql": "💡"
+    },
+    "241": {
+        "bri": 200,
+        "n": "Brightness (ON)",
+        "on": true,
+        "ql": "🔅"
+    },
+    "242": {
+        "bri": 20,
+        "n": "Brightness (OFF)",
+        "on": true,
+        "ql": "☾"
+    },
+    "245": {
+        "mainseg": 0,
+        "n": "_BLANK",
+        "seg": [
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 142,
+                "grp": 1,
+                "id": 0,
+                "ix": 0,
+                "lc": 7,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Matrix",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": false,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            }
+        ]
+    },
+    "249": {
+        "mainseg": 0,
+        "n": "DEMO (text)",
+        "seg": [
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 0,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        160,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 122,
+                "grp": 1,
+                "id": 0,
+                "ix": 128,
+                "lc": 3,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Demo done, thanks!",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": true,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 0,
+                "startY": 0,
+                "stop": 16,
+                "stopY": 16,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "bm": 0,
+                "bri": 255,
+                "c1": 128,
+                "c2": 128,
+                "c3": 16,
+                "cct": 127,
+                "col": [
+                    [
+                        255,
+                        160,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    [
+                        0,
+                        0,
+                        0,
+                        0
+                    ]
+                ],
+                "frz": false,
+                "fx": 28,
+                "grp": 1,
+                "id": 1,
+                "ix": 128,
+                "lc": 3,
+                "m12": 0,
+                "mi": false,
+                "mY": false,
+                "n": "Corners",
+                "o1": false,
+                "o2": false,
+                "o3": false,
+                "of": 0,
+                "on": true,
+                "pal": 0,
+                "rev": false,
+                "rY": false,
+                "sel": false,
+                "set": 0,
+                "si": 0,
+                "spc": 0,
+                "start": 256,
+                "startY": 0,
+                "stop": 260,
+                "stopY": 1,
+                "sx": 128,
+                "tp": false
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            },
+            {
+                "stop": 0
+            }
+        ]
+    },
+    "250": {
+        "n": "PLAY DEMO",
+        "on": true,
+        "playlist": {
+            "dur": [
+                1,
+                40,
+                80,
+                80,
+                36,
+                1,
+                80,
+                80,
+                80,
+                80,
+                80,
+                80,
+                80,
+                80,
+                80,
+                80,
+                80,
+                50,
+                50,
+                80,
+                50,
+                50,
+                50,
+                180,
+                1
+            ],
+            "end": 1,
+            "ps": [
+                241,
+                249,
+                121,
+                122,
+                123,
+                241,
+                101,
+                2,
+                3,
+                5,
+                7,
+                4,
+                8,
+                48,
+                44,
+                43,
+                47,
+                42,
+                41,
+                46,
+                45,
+                49,
+                50,
+                249,
+                240
+            ],
+            "r": 0,
+            "repeat": 1,
+            "transition": [
+                1,
+                18,
+                18,
+                18,
+                18,
+                1,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                18,
+                1
+            ]
+        },
+        "ql": "🎬"
     },
     "3": {
-        "mainseg": 2,
+        "mainseg": 0,
         "n": "Wordclock Fire",
         "seg": [
             {
@@ -1005,6 +2733,7 @@
     "4": {
         "mainseg": 0,
         "n": "Wordclock Pride",
+        "ql": "🌈",
         "seg": [
             {
                 "bm": 0,
@@ -1244,7 +2973,7 @@
         ]
     },
     "41": {
-        "mainseg": 2,
+        "mainseg": 0,
         "n": "Wordclock ~ Rain",
         "seg": [
             {
@@ -1485,7 +3214,7 @@
         ]
     },
     "42": {
-        "mainseg": 2,
+        "mainseg": 0,
         "n": "Wordclock ~ Drizzle",
         "seg": [
             {
@@ -1726,7 +3455,7 @@
         ]
     },
     "43": {
-        "mainseg": 2,
+        "mainseg": 0,
         "n": "Wordclock ~ Fog",
         "seg": [
             {
@@ -1967,8 +3696,9 @@
         ]
     },
     "44": {
-        "mainseg": 2,
+        "mainseg": 0,
         "n": "Wordclock ~ Clouds",
+        "ql": "☁️",
         "seg": [
             {
                 "bm": 0,
@@ -2114,7 +3844,7 @@
                 "start": 0,
                 "startY": 0,
                 "stop": 16,
-                "stopY": 6,
+                "stopY": 5,
                 "sx": 187,
                 "tp": false
             },
@@ -2208,7 +3938,7 @@
         ]
     },
     "45": {
-        "mainseg": 3,
+        "mainseg": 0,
         "n": "Wordclock ~ Snow",
         "seg": [
             {
@@ -2502,7 +4232,7 @@
         ]
     },
     "46": {
-        "mainseg": 2,
+        "mainseg": 0,
         "n": "Wordclock ~ Thunderstorm",
         "seg": [
             {
@@ -2633,7 +4363,7 @@
                 "m12": 1,
                 "mi": false,
                 "mY": false,
-                "n": "Overlay 1",
+                "n": "Overlay Rain",
                 "o1": false,
                 "o2": false,
                 "o3": false,
@@ -2642,7 +4372,7 @@
                 "pal": 0,
                 "rev": false,
                 "rY": false,
-                "sel": true,
+                "sel": false,
                 "set": 0,
                 "si": 0,
                 "spc": 0,
@@ -2655,7 +4385,7 @@
             },
             {
                 "bm": 10,
-                "bri": 29,
+                "bri": 3,
                 "c1": 128,
                 "c2": 128,
                 "c3": 16,
@@ -2684,12 +4414,12 @@
                 "fx": 1,
                 "grp": 1,
                 "id": 3,
-                "ix": 0,
+                "ix": 11,
                 "lc": 3,
                 "m12": 0,
                 "mi": false,
                 "mY": false,
-                "n": "Overlay 2",
+                "n": "Overlay Flash",
                 "o1": false,
                 "o2": false,
                 "o3": false,
@@ -2698,7 +4428,7 @@
                 "pal": 0,
                 "rev": false,
                 "rY": false,
-                "sel": false,
+                "sel": true,
                 "set": 0,
                 "si": 0,
                 "spc": 0,
@@ -2796,7 +4526,7 @@
         ]
     },
     "47": {
-        "mainseg": 3,
+        "mainseg": 0,
         "n": "Wordclock ~ Windy",
         "seg": [
             {
@@ -3090,7 +4820,7 @@
         ]
     },
     "48": {
-        "mainseg": 3,
+        "mainseg": 0,
         "n": "Wordclock ~ Heatwave",
         "seg": [
             {
@@ -3235,7 +4965,7 @@
                 "si": 0,
                 "spc": 0,
                 "start": 0,
-                "startY": 10,
+                "startY": 13,
                 "stop": 16,
                 "stopY": 16,
                 "sx": 78,
@@ -3384,7 +5114,7 @@
         ]
     },
     "49": {
-        "mainseg": 4,
+        "mainseg": 0,
         "n": "Wordclock ~ Hail",
         "seg": [
             {
@@ -3731,7 +5461,7 @@
         ]
     },
     "5": {
-        "mainseg": 1,
+        "mainseg": 0,
         "n": "Wordclock Candle",
         "seg": [
             {
@@ -3972,7 +5702,7 @@
         ]
     },
     "50": {
-        "mainseg": 3,
+        "mainseg": 0,
         "n": "Wordclock ~ Ice",
         "seg": [
             {
@@ -4266,7 +5996,7 @@
         ]
     },
     "7": {
-        "mainseg": 2,
+        "mainseg": 0,
         "n": "Wordclock DNA",
         "seg": [
             {
@@ -4507,7 +6237,7 @@
         ]
     },
     "8": {
-        "mainseg": 3,
+        "mainseg": 0,
         "n": "Wordclock Trippy",
         "seg": [
             {
